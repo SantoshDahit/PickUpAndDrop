@@ -43,7 +43,22 @@ export default async function RootLayout({
               </span>
             </Link>
             <nav className="flex items-center gap-1.5 text-[14.5px]">
-              {session ? (
+              {session?.isAdmin ? (
+                <>
+                  <Link href="/admin" className="btn btn-ghost btn-sm border-transparent">
+                    Requested bookings
+                  </Link>
+                  <Link href="/admin/routes" className="btn btn-ghost btn-sm border-transparent">
+                    Routes &amp; pricing
+                  </Link>
+                  <Link href="/admin/drivers" className="btn btn-ghost btn-sm border-transparent">
+                    Drivers
+                  </Link>
+                  <form action={logout}>
+                    <button className="btn btn-ghost btn-sm">Log out</button>
+                  </form>
+                </>
+              ) : session ? (
                 <>
                   <Link href="/book" className="btn btn-ghost btn-sm border-transparent">
                     Book a pickup
@@ -51,11 +66,6 @@ export default async function RootLayout({
                   <Link href="/trips" className="btn btn-ghost btn-sm border-transparent">
                     My trips
                   </Link>
-                  {session.isAdmin && (
-                    <Link href="/admin" className="btn btn-ghost btn-sm border-transparent">
-                      Admin
-                    </Link>
-                  )}
                   <form action={logout}>
                     <button className="btn btn-ghost btn-sm">Log out</button>
                   </form>
