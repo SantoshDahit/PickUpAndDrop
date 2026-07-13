@@ -54,6 +54,9 @@ export default async function RootLayout({
                   <Link href="/admin/drivers" className="btn btn-ghost btn-sm border-transparent">
                     Drivers
                   </Link>
+                  <Link href="/account" className="btn btn-ghost btn-sm border-transparent">
+                    Account
+                  </Link>
                   <form action={logout}>
                     <button className="btn btn-ghost btn-sm">Log out</button>
                   </form>
@@ -65,6 +68,9 @@ export default async function RootLayout({
                   </Link>
                   <Link href="/trips" className="btn btn-ghost btn-sm border-transparent">
                     My trips
+                  </Link>
+                  <Link href="/account" className="btn btn-ghost btn-sm border-transparent">
+                    Account
                   </Link>
                   <form action={logout}>
                     <button className="btn btn-ghost btn-sm">Log out</button>

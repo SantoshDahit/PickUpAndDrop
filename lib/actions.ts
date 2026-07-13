@@ -54,6 +54,37 @@ export async function logout() {
   redirect("/");
 }
 
+export async function changePassword(formData: FormData) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const current = String(formData.get("current_password") ?? "");
+  const next = String(formData.get("new_password") ?? "");
+  const confirm = String(formData.get("confirm_password") ?? "");
+
+  if (next.length < 6) {
+    redirect("/account?error=" + encodeURIComponent("New password needs at least 6 characters."));
+  }
+  if (next !== confirm) {
+    redirect("/account?error=" + encodeURIComponent("New passwords don't match."));
+  }
+
+  const user = await get<{ password_hash: string }>(
+    "SELECT password_hash FROM users WHERE id = ?",
+    [session!.uid]
+  );
+  if (!user || !bcrypt.compareSync(current, user.password_hash)) {
+    redirect("/account?error=" + encodeURIComponent("Current password is wrong."));
+  }
+
+  await run("UPDATE users SET password_hash = ? WHERE id = ?", [
+    bcrypt.hashSync(next, 10),
+    session!.uid,
+  ]);
+
+  redirect("/account?ok=1");
+}
+
 // ---------- Trip requests ----------
 
 export async function createTripRequest(formData: FormData) {
