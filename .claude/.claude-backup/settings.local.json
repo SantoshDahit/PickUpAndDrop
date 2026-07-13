@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(mv .claude /tmp/claude-501/-Users-santsohdahit-PickUpAndDrop/0b6f5a73-6fce-46e3-88c3-7605110d71f7/scratchpad/.claude-backup)",
+      "Bash(npx -y create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --use-npm --yes)"
+    ]
+  }
+}
