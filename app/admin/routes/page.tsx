@@ -28,7 +28,7 @@ export default async function AdminRoutesPage() {
       <form action={addRoute} className="card p-5 mb-10 grid gap-4 sm:grid-cols-[1fr_1fr_auto] items-end">
         <div>
           <label className="field-label" htmlFor="from_location">From</label>
-          <input className="field-input" id="from_location" name="from_location" placeholder="Incheon Airport (ICN)" required />
+          <input className="field-input" id="from_location" name="from_location" placeholder="Airport or city" required />
         </div>
         <div>
           <label className="field-label" htmlFor="to_location">To</label>
