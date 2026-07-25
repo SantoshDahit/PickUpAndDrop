@@ -9,8 +9,9 @@ Design docs for **LandGreet** (landgreet.com) — airport pickups anywhere in Ko
 | [000](./000-stack-migration.md) | Stack decision: Spring Boot + Thymeleaf, migration off Next.js | Accepted |
 | [001](./001-user-accounts.md) | User accounts — signup/login, profile CRUD (avatar deferred) | Implemented (REST) |
 | [002](./002-booking-and-group-matching.md) | Booking with 7-day group matching + group chat | Implemented (REST) |
+| [003](./003-driver-management.md) | Taxi drivers — roster, admin CRUD, ride assignment | Draft |
 
-Backlog (no spec yet, add as `002+` when picked up): booking lifecycle & driver assignment, landing page + fare calculator, email notifications (booking confirmed / password reset), payments & settlement tracking, driver portal, i18n (KO/EN).
+Backlog (no spec yet, add as `004+` when picked up): pricing/fare tiers + settlement (introduces the `ride` entity, see 003 §4.1), booking lifecycle/ops workflow, landing page + fare calculator, email notifications, driver portal (driver accounts + DRIVER role), avatars & driver photos (blocked on S3, convention 21), i18n (KO/EN).
 
 ## How to write a plan
 
