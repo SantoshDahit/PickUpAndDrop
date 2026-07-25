@@ -5,6 +5,7 @@ import com.landgreet.entity.Booking;
 import com.landgreet.exception.ApiException;
 import com.landgreet.exception.ErrorCode;
 import com.landgreet.repository.booking.BookingRepository;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -43,5 +44,10 @@ public class BookingService {
     @Transactional(readOnly = true)
     public Page<Booking> search(BookingDto.SearchRequest searchRequest, Pageable pageable) {
         return bookingRepository.search(searchRequest, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsUpcomingByDriverId(String driverId, LocalDate from) {
+        return bookingRepository.existsUpcomingByDriverId(driverId, from);
     }
 }

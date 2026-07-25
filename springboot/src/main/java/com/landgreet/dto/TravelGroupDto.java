@@ -20,14 +20,17 @@ public class TravelGroupDto {
         private GroupStatus status;
         private List<MemberResponse> members;
         private LocalDate agreedDate;   // set when every member's date is identical
+        private DriverDto.PublicResponse driver;   // null until the admin assigns one
 
         public Response(String id, RouteDto.Response route, GroupStatus status,
-                        List<MemberResponse> members, LocalDate agreedDate) {
+                        List<MemberResponse> members, LocalDate agreedDate,
+                        DriverDto.PublicResponse driver) {
             this.id = id;
             this.route = route;
             this.status = status;
             this.members = members;
             this.agreedDate = agreedDate;
+            this.driver = driver;
         }
     }
 

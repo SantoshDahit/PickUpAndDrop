@@ -1,6 +1,6 @@
 # 003 — Taxi drivers: roster, admin CRUD, ride assignment
 
-**Status:** Draft
+**Status:** Implemented (2026-07-26) — 23/23 tests green (Testcontainers) + live curl pass against dev MySQL
 **Stack:** REST API per `springboot/conventions/` (see [000](./000-stack-migration.md))
 **Depends on:** [001](./001-user-accounts.md) (auth/roles), [002](./002-booking-and-group-matching.md) (bookings, travel groups)
 

@@ -1,11 +1,13 @@
 package com.landgreet.support;
 
 import com.landgreet.dto.BookingDto;
+import com.landgreet.entity.Driver;
 import com.landgreet.entity.Route;
 import com.landgreet.entity.User;
 import com.landgreet.enums.MatchPref;
 import com.landgreet.enums.Role;
 import com.landgreet.service.BookingFacade;
+import com.landgreet.service.DriverService;
 import com.landgreet.service.RouteService;
 import com.landgreet.service.UserService;
 import java.time.LocalDate;
@@ -25,6 +27,7 @@ public class TestDataHelper {
     private final UserService userService;
     private final RouteService routeService;
     private final BookingFacade bookingFacade;
+    private final DriverService driverService;
     private final PasswordEncoder passwordEncoder;
 
     public User createUser() {
@@ -45,6 +48,12 @@ public class TestDataHelper {
 
     public Route firstRoute() {
         return routeService.getAllActive().get(0);
+    }
+
+    public Driver createDriver(int seats) {
+        int n = SEQ.incrementAndGet();
+        return driverService.save(new Driver("Driver " + n, "+82 10-2222-" + String.format("%04d", n),
+                "LIC-" + n, true, "Hyundai Staria", n + "가" + (1000 + n), seats));
     }
 
     public BookingDto.Response createGroupBooking(User user, LocalDate travelDate, int partySize) {

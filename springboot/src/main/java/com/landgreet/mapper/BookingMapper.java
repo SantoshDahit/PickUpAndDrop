@@ -9,8 +9,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class BookingMapper extends BaseMapper<Booking, BookingDto> {
 
-    protected BookingMapper(ModelMapper modelMapper) {
+    private final DriverMapper driverMapper;
+
+    protected BookingMapper(ModelMapper modelMapper, DriverMapper driverMapper) {
         super(modelMapper, Booking.class);
+        this.driverMapper = driverMapper;
         this.registerDtoMapping(BookingDto.Response.class);
         this.registerDtoMapping(BookingDto.SummaryResponse.class);
     }
@@ -19,12 +22,14 @@ public class BookingMapper extends BaseMapper<Booking, BookingDto> {
         BookingDto.Response response = super.toDto(entity, BookingDto.Response.class);
         // travelGroup.id → groupId is not a STRICT-matching path; set explicitly.
         response.setGroupId(entity.getTravelGroup() == null ? null : entity.getTravelGroup().getId());
+        response.setDriver(driverMapper.toPublicResponse(entity.effectiveDriver()));
         return response;
     }
 
     public BookingDto.SummaryResponse toSummaryResponse(Booking entity) {
         BookingDto.SummaryResponse response = super.toDto(entity, BookingDto.SummaryResponse.class);
         response.setGroupId(entity.getTravelGroup() == null ? null : entity.getTravelGroup().getId());
+        response.setDriver(driverMapper.toPublicResponse(entity.effectiveDriver()));
         return response;
     }
 }

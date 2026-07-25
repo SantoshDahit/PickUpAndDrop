@@ -47,8 +47,13 @@ public class BookingDto {
         private String contact;
         private String notes;
         private BookingStatus status;
+        private DriverDto.PublicResponse driver;   // effective: group's when grouped
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
+
+        public void setDriver(DriverDto.PublicResponse driver) {
+            this.driver = driver;
+        }
 
         public void setGroupId(String groupId) {
             this.groupId = groupId;
@@ -70,7 +75,12 @@ public class BookingDto {
         private int partySize;
         private MatchPref matchPref;
         private BookingStatus status;
+        private DriverDto.PublicResponse driver;   // effective: group's when grouped
         private LocalDateTime createdAt;
+
+        public void setDriver(DriverDto.PublicResponse driver) {
+            this.driver = driver;
+        }
 
         public void setGroupId(String groupId) {
             this.groupId = groupId;

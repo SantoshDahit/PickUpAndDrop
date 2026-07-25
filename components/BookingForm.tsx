@@ -32,13 +32,19 @@ export default function BookingForm({
   routes,
   tiers,
   error,
+  initialRouteId,
+  initialPeople,
+  initialDate,
 }: {
   routes: Route[];
   tiers: PriceTier[];
   error?: string;
+  initialRouteId?: number;
+  initialPeople?: number;
+  initialDate?: string;
 }) {
-  const [routeId, setRouteId] = useState(routes[0]?.id ?? 0);
-  const [people, setPeople] = useState(1);
+  const [routeId, setRouteId] = useState(initialRouteId ?? routes[0]?.id ?? 0);
+  const [people, setPeople] = useState(initialPeople ?? 1);
 
   const perPerson = useMemo(() => priceFor(tiers, routeId, people), [tiers, routeId, people]);
   const saving = useMemo(() => nextSaving(tiers, routeId, people), [tiers, routeId, people]);
@@ -68,7 +74,7 @@ export default function BookingForm({
         <div className="grid sm:grid-cols-2 gap-5">
           <div>
             <label className="field-label" htmlFor="travel_date">Arrival date</label>
-            <input className="field-input" id="travel_date" name="travel_date" type="date" required />
+            <input className="field-input" id="travel_date" name="travel_date" type="date" defaultValue={initialDate} required />
           </div>
           <div>
             <label className="field-label" htmlFor="flight_no">Flight number <span className="normal-case font-normal">(if booked)</span></label>

@@ -39,6 +39,10 @@ public class Booking extends BaseFullTimeEntity {
     @JoinColumn(name = "group_id")
     private TravelGroup travelGroup;   // null = riding individually
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "driver_id")
+    private Driver driver;             // individual rides only; grouped rides use the group's driver
+
     @Column(name = "travel_date", nullable = false)
     private LocalDate travelDate;
 
@@ -98,7 +102,24 @@ public class Booking extends BaseFullTimeEntity {
         this.travelDate = travelDate;
     }
 
+    public void assignDriver(Driver driver) {
+        this.driver = driver;
+    }
+
+    public void unassignDriver() {
+        this.driver = null;
+    }
+
+    /** Effective driver: the group's when grouped, else this booking's own. */
+    public Driver effectiveDriver() {
+        return travelGroup != null ? travelGroup.getDriver() : driver;
+    }
+
     public boolean isActive() {
         return status == BookingStatus.ACTIVE;
+    }
+
+    public boolean isGrouped() {
+        return travelGroup != null;
     }
 }

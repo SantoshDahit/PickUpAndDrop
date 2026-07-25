@@ -7,6 +7,7 @@ import com.landgreet.entity.GroupMessage;
 import com.landgreet.entity.TravelGroup;
 import com.landgreet.exception.ApiException;
 import com.landgreet.exception.ErrorCode;
+import com.landgreet.mapper.DriverMapper;
 import com.landgreet.mapper.RouteMapper;
 import java.time.LocalDate;
 import java.util.List;
@@ -24,6 +25,7 @@ public class TravelGroupFacade {
     private final UserService userService;
     private final BookingFacade bookingFacade;
     private final RouteMapper routeMapper;
+    private final DriverMapper driverMapper;
 
     @Transactional(readOnly = true)
     public TravelGroupDto.Response getById(String userId, boolean isAdmin, String groupId) {
@@ -45,7 +47,8 @@ public class TravelGroupFacade {
                 ? members.get(0).getTravelDate() : null;
 
         return new TravelGroupDto.Response(group.getId(), routeMapper.toResponse(group.getRoute()),
-                group.getStatus(), memberResponses, agreedDate);
+                group.getStatus(), memberResponses, agreedDate,
+                driverMapper.toPublicResponse(group.getDriver()));
     }
 
     @Transactional(readOnly = true)

@@ -3,6 +3,7 @@ package com.landgreet.repository.booking;
 import com.landgreet.dto.BookingDto;
 import com.landgreet.entity.Booking;
 import com.landgreet.enums.BookingStatus;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -40,5 +41,13 @@ public class BookingRepositoryImpl implements BookingRepository {
     @Override
     public Page<Booking> search(BookingDto.SearchRequest searchRequest, Pageable pageable) {
         return bookingQueryRepository.search(searchRequest, pageable);
+    }
+
+    @Override
+    public boolean existsUpcomingByDriverId(String driverId, LocalDate from) {
+        return bookingJpaRepository.existsByDriverIdAndStatusAndTravelDateGreaterThanEqual(
+                driverId, BookingStatus.ACTIVE, from)
+                || bookingJpaRepository.existsByTravelGroupDriverIdAndStatusAndTravelDateGreaterThanEqual(
+                driverId, BookingStatus.ACTIVE, from);
     }
 }

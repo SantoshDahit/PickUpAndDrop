@@ -35,6 +35,10 @@ public class TravelGroup extends BaseTimeEntity {
     @Column(name = "status", nullable = false)
     private GroupStatus status;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "driver_id")
+    private Driver driver;
+
     public TravelGroup(Route route) {
         this.id = UUID.randomUUID().toString();
         this.route = route;
@@ -43,5 +47,13 @@ public class TravelGroup extends BaseTimeEntity {
 
     public void updateStatus(GroupStatus status) {
         this.status = status;
+    }
+
+    public void assignDriver(Driver driver) {
+        this.driver = driver;
+    }
+
+    public void unassignDriver() {
+        this.driver = null;
     }
 }

@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 
 /**
  * errorCode format: {DOMAIN}_{HTTP}_{SEQ}
- * Domains: CMN(common), USR(user), RTE(route), BKG(booking), GRP(group), MSG(message)
+ * Domains: CMN(common), USR(user), RTE(route), BKG(booking), GRP(group), MSG(message), DRV(driver)
  */
 @Getter
 @RequiredArgsConstructor
@@ -43,6 +43,9 @@ public enum ErrorCode {
     GROUP_IS_NOT_FOUND(HttpStatus.NOT_FOUND,
             "Group not found.",
             "GRP_NF_001"),
+    DRIVER_IS_NOT_FOUND(HttpStatus.NOT_FOUND,
+            "Driver not found.",
+            "DRV_NF_001"),
 
     // 400 Bad Request
     USER_DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST,
@@ -62,7 +65,19 @@ public enum ErrorCode {
             "GRP_NF_002"), // non-members get 404, not 403 — do not confirm the group exists
     MESSAGE_BODY_IS_INVALID(HttpStatus.BAD_REQUEST,
             "Messages need 1-1000 characters.",
-            "MSG_BR_001");
+            "MSG_BR_001"),
+    BOOKING_IS_GROUPED(HttpStatus.BAD_REQUEST,
+            "This booking rides with a group — assign the driver to the group instead.",
+            "BKG_BR_003"),
+    DRIVER_IS_NOT_ASSIGNABLE(HttpStatus.BAD_REQUEST,
+            "This driver is not available for assignment.",
+            "DRV_BR_001"),
+    DRIVER_SEATS_INSUFFICIENT(HttpStatus.BAD_REQUEST,
+            "This driver's vehicle doesn't have enough seats for the ride.",
+            "DRV_BR_002"),
+    DRIVER_HAS_UPCOMING_RIDES(HttpStatus.BAD_REQUEST,
+            "This driver still has upcoming rides — unassign them first.",
+            "DRV_BR_003");
 
     private final HttpStatus httpStatus;
     private final String message;

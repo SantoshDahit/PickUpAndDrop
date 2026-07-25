@@ -2,6 +2,7 @@ package com.landgreet.repository.booking;
 
 import com.landgreet.dto.BookingDto;
 import com.landgreet.entity.Booking;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -18,4 +19,7 @@ public interface BookingRepository {
     List<Booking> findActiveByGroupId(String groupId);
 
     Page<Booking> search(BookingDto.SearchRequest searchRequest, Pageable pageable);
+
+    /** Any active ride (group or individual) with this driver dated {@code from} or later? */
+    boolean existsUpcomingByDriverId(String driverId, LocalDate from);
 }
