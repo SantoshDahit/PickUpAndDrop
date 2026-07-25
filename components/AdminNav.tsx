@@ -16,7 +16,7 @@ export default function AdminNav({ active }: { active: "requests" | "routes" | "
           className={
             "px-4 py-2.5 text-[14.5px] font-semibold border-b-2 -mb-px transition-colors " +
             (active === t.key
-              ? "border-brick text-brick"
+              ? "border-ink text-ink"
               : "border-transparent text-muted hover:text-ink")
           }
         >

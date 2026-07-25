@@ -30,7 +30,7 @@ export default async function LoginPage({
 
       <p className="text-sm text-muted mt-6 text-center">
         First time here?{" "}
-        <Link href="/signup" className="text-brick font-semibold hover:underline">
+        <Link href="/signup" className="text-ink font-medium underline underline-offset-2">
           Create an account
         </Link>
       </p>

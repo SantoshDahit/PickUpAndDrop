@@ -45,7 +45,7 @@ export default async function AdminDriversPage() {
         </div>
         <div className="flex items-center gap-4 pb-1">
           <label className="flex items-center gap-2 text-[14.5px] font-medium whitespace-nowrap">
-            <input type="checkbox" name="owns_vehicle" className="h-4 w-4 accent-[var(--brick)]" />
+            <input type="checkbox" name="owns_vehicle" className="h-4 w-4 accent-[var(--ink)]" />
             Own car
           </label>
           <button className="btn btn-primary">Add</button>
@@ -62,14 +62,7 @@ export default async function AdminDriversPage() {
             <div key={d.id} className={"card p-5" + (d.active ? "" : " opacity-60")}>
               <div className="flex items-center justify-between gap-3 mb-2">
                 <h2 className="text-lg">{d.name}</h2>
-                <span
-                  className="stamp"
-                  style={
-                    d.owns_vehicle
-                      ? { color: "var(--pine)", background: "var(--pine-tint)" }
-                      : { color: "var(--amber)", background: "var(--amber-tint)" }
-                  }
-                >
+                <span className={d.owns_vehicle ? "stamp stamp-confirmed" : "stamp stamp-pending"}>
                   {d.owns_vehicle ? "own car" : "needs rental"}
                 </span>
               </div>

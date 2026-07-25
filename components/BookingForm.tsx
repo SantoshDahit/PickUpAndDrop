@@ -78,20 +78,22 @@ export default function BookingForm({
 
         <div>
           <label className="field-label">How many people?</label>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center rounded-[10px] border overflow-hidden max-w-[220px]" style={{ borderColor: "var(--line-strong)" }}>
             <button
               type="button"
               onClick={() => setPeople((p) => Math.max(1, p - 1))}
-              className="btn btn-ghost h-11 w-11 p-0 text-xl"
+              className="h-[46px] w-14 text-xl text-ink-soft hover:bg-paper-deep transition-colors cursor-pointer"
               aria-label="One less person"
             >
               −
             </button>
-            <span className="font-display text-3xl w-10 text-center tabular">{people}</span>
+            <span className="flex-1 text-center font-display font-bold text-lg tabular border-x" style={{ borderColor: "var(--line)" }}>
+              {people}
+            </span>
             <button
               type="button"
               onClick={() => setPeople((p) => Math.min(12, p + 1))}
-              className="btn btn-ghost h-11 w-11 p-0 text-xl"
+              className="h-[46px] w-14 text-xl text-ink-soft hover:bg-paper-deep transition-colors cursor-pointer"
               aria-label="One more person"
             >
               +
@@ -147,7 +149,7 @@ export default function BookingForm({
         <div className="px-6 py-5 grid gap-4">
           <div className="flex items-baseline justify-between">
             <span className="text-ink-soft">
-              {people} {people === 1 ? "person" : "people"} × per person
+              Per person × {people} {people === 1 ? "person" : "people"}
             </span>
             <span className="tabular font-semibold text-lg">
               {perPerson !== null ? `₩${perPerson.toLocaleString()}` : "—"}
@@ -155,7 +157,7 @@ export default function BookingForm({
           </div>
           <div className="rule-dashed pt-4 flex items-baseline justify-between">
             <span className="font-semibold">Total, cash on arrival</span>
-            <span className="font-display text-3xl tabular">
+            <span className="font-display font-bold text-3xl tabular">
               {perPerson !== null ? `₩${(perPerson * people).toLocaleString()}` : "—"}
             </span>
           </div>

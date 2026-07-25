@@ -69,7 +69,7 @@ export default async function TripsPage({
       {trips.length === 0 ? (
         <div className="card p-10 text-center">
           <p className="font-display text-xl mb-2">No trips yet</p>
-          <p className="text-ink-soft mb-6">Your booked pickups will show up here as tickets.</p>
+          <p className="text-ink-soft mb-6">Your booked pickups and their status will show up here.</p>
           <Link href="/book" className="btn btn-primary">Book your first pickup</Link>
         </div>
       ) : (

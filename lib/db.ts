@@ -121,7 +121,11 @@ function init(): Promise<void> {
 export async function all<T>(sql: string, args: InArgs = []): Promise<T[]> {
   await init();
   const rs = await client.execute({ sql, args });
-  return rs.rows as unknown as T[];
+  // libsql Row objects aren't plain objects, which React refuses to pass
+  // from Server to Client Components — convert them.
+  return rs.rows.map((row) =>
+    Object.fromEntries(rs.columns.map((c, i) => [c, row[i]]))
+  ) as T[];
 }
 
 export async function get<T>(sql: string, args: InArgs = []): Promise<T | undefined> {

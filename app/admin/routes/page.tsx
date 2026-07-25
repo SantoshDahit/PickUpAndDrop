@@ -78,7 +78,7 @@ export default async function AdminRoutesPage() {
                         <td className="py-2 text-right">
                           <form action={deleteTier}>
                             <input type="hidden" name="id" value={t.id} />
-                            <button className="text-muted hover:text-brick text-[13px] font-semibold" aria-label="Delete tier">
+                            <button className="text-muted hover:text-ink text-[13px] font-medium underline underline-offset-2" aria-label="Delete tier">
                               remove
                             </button>
                           </form>
