@@ -1,1 +1,1 @@
-rootProject.name = "landgreet"
+rootProject.name = "pickupdrop"

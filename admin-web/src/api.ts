@@ -1,12 +1,12 @@
 const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
 
 export function getToken(): string | null {
-  return localStorage.getItem('lg_admin_token');
+  return localStorage.getItem('pd_admin_token');
 }
 
 export function setToken(token: string | null) {
-  if (token) localStorage.setItem('lg_admin_token', token);
-  else localStorage.removeItem('lg_admin_token');
+  if (token) localStorage.setItem('pd_admin_token', token);
+  else localStorage.removeItem('pd_admin_token');
 }
 
 export class ApiError extends Error {

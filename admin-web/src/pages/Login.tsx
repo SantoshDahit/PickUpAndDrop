@@ -36,7 +36,7 @@ export default function Login() {
   return (
     <div className="login-wrap">
       <form className="card login-card" onSubmit={submit}>
-        <h1>LandGreet</h1>
+        <h1>Pickup&amp;Drop</h1>
         <p className="muted">Admin console — sign in to continue.</p>
         {error && <div className="notice error">{error}</div>}
         <div className="field">

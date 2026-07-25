@@ -10,7 +10,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="shell">
       <nav className="sidebar">
-        <div className="brand">LandGreet <span>admin</span></div>
+        <div className="brand">Pickup&amp;Drop <span>admin</span></div>
         <NavLink to="/bookings">Bookings</NavLink>
         <NavLink to="/drivers">Drivers</NavLink>
         <div className="spacer" />

@@ -1,6 +1,6 @@
 # Feature Plans
 
-Design docs for **LandGreet** (landgreet.com) — airport pickups anywhere in Korea. Working title was "Pickup & Drop"; renamed 2026-07-26 (see 000). One file per feature, numbered in rough build order. A plan is written **before** the code and updated when reality disagrees with it — the plan is the contract, the code is the implementation.
+Design docs for **Pickup&Drop** — airport pickups anywhere in Korea. (Named Pickup&Drop by the owner 2026-07-26, reverting the brief LandGreet rename; see 000.) One file per feature, numbered in rough build order. A plan is written **before** the code and updated when reality disagrees with it — the plan is the contract, the code is the implementation.
 
 ## Index
 

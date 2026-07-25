@@ -1,6 +1,6 @@
 spring:
   application:
-    name: landgreet
+    name: pickupdrop
 
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3307/landgreet?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
@@ -31,9 +31,9 @@ server:
 
 jwt:
   token:
-    secret: ${JWT_SECRET:landgreet-local-dev-secret-key-change-in-production-0000}
+    secret: ${JWT_SECRET:pickupdrop-local-dev-secret-key-change-in-production-00}
 
 app:
   seed:
-    admin-email: admin@landgreet.com
+    admin-email: admin@pickupdrop.com
     admin-password: ${SEED_ADMIN_PASSWORD:admin123}

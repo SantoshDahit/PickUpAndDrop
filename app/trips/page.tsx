@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { all } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { cancelOwnRequest } from "@/lib/actions";
+import PageHeader from "@/components/PageHeader";
 
 type TripRow = {
   id: number;
@@ -51,14 +52,13 @@ export default async function TripsPage({
   );
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-12">
-      <p className="eyebrow mb-3">My trips</p>
-      <h1 className="text-3xl mb-2">Your pickups</h1>
-      <p className="text-ink-soft mb-8">
-        Pending requests get confirmed once we&rsquo;ve set your van and driver —
-        we&rsquo;ll reach you on the contact you gave.
-      </p>
-
+    <div>
+      <PageHeader
+        script="My trips"
+        title="Your pickups"
+        subtitle="Pending requests get confirmed once we've set your van and driver — we'll reach you on the contact you gave."
+      />
+      <div className="mx-auto max-w-3xl px-5 py-12">
       {requested && (
         <div className="notice-ok mb-8">
           Request received! We&rsquo;ll be in touch to confirm your van. You can
@@ -125,6 +125,7 @@ export default async function TripsPage({
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

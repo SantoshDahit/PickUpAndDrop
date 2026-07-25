@@ -28,6 +28,8 @@ are the **authoritative architecture reference**; this plan defers to them. Deci
 
 ## Name
 
+**Pickup&Drop** (owner decision, 2026-07-26) — the original working title, restored after a brief rename to LandGreet the same day. Package/artifact name: `com.pickupdrop` / `pickupdrop`. Seed emails rebranded via migration (applied migrations are immutable). The earlier naming exploration below is kept for the record.
+
 **LandGreet** (2026-07-26) — you land, we greet you: the whole value proposition in two plain English words, easy for the target customer (foreign travellers) to say and spell. No brand collisions found. `landgreet.com` was available at decision time; **register it before building further brand equity.** Runners-up, also available at the time: `greetride.com`, `greetport.com`, `sortride.com`, `poolfare.com`, `meetfare.com`. An earlier Korean-rooted candidate ("Majungo", from 마중) was set aside in favour of an English word. Working title "Pickup & Drop" survives only in the repo folder name and the frozen Next.js reference app.
 
 ## Decision
