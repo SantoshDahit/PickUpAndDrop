@@ -7,7 +7,8 @@ Design docs for **LandGreet** (landgreet.com) — airport pickups anywhere in Ko
 | # | Feature | Status |
 |---|---------|--------|
 | [000](./000-stack-migration.md) | Stack decision: Spring Boot + Thymeleaf, migration off Next.js | Accepted |
-| [001](./001-user-accounts.md) | User accounts — signup/login, profile CRUD, avatar image | Implemented |
+| [001](./001-user-accounts.md) | User accounts — signup/login, profile CRUD (avatar deferred) | Implemented (REST) |
+| [002](./002-booking-and-group-matching.md) | Booking with 7-day group matching + group chat | Implemented (REST) |
 
 Backlog (no spec yet, add as `002+` when picked up): booking lifecycle & driver assignment, landing page + fare calculator, email notifications (booking confirmed / password reset), payments & settlement tracking, driver portal, i18n (KO/EN).
 
@@ -24,15 +25,9 @@ Each plan has these sections — skip a section only if it genuinely doesn't app
 7. **Acceptance criteria** — checkable statements; a reviewer should be able to verify each one.
 8. **Test plan** — what gets tested and how.
 
-## Conventions for the Spring codebase (read before implementing any plan)
+## Conventions
 
-The stack itself is decided in [000](./000-stack-migration.md). Ground rules on top of it:
-
-- **Project layout:** single Gradle project in `springboot/`, base package `com.landgreet`. Package by feature (`user/`, `booking/`, `admin/`), not by layer — `user/` holds `User`, `UserRepository`, `UserService`, `UserController`, `AccountController` together.
-- **Web layer:** classic MVC — `@Controller` + Thymeleaf views, POST-redirect-GET everywhere. Flash messages via `RedirectAttributes` (replaces the old `?error=` query-param style). Bean Validation (`@Valid` on form-backing objects) with errors rendered next to fields via `th:errors`.
-- **No `@ResponseBody` JSON endpoints for our own pages.** If a page needs partial updates, return a Thymeleaf fragment (htmx-style); a JSON API only appears when an external consumer (mobile app) does.
-- **Persistence:** JPA entities kept thin (no business logic), Spring Data repositories, service layer owns transactions (`@Transactional` on services, never controllers). Schema changes go through **Flyway only** — `ddl-auto=none` (SQLite's loose column typing defeats Hibernate's validator), never `update`.
-- **Security:** all authorization in `SecurityFilterChain` route rules **plus** method-level checks (`@PreAuthorize` or explicit ownership checks in services) — route rules alone don't protect against IDOR. CSRF stays on; Thymeleaf injects tokens into forms automatically.
-- **Templates:** `src/main/resources/templates/`, shared chrome via layout fragments (`fragments/layout.html`). Design tokens and UI text are ported from the frozen Next.js app (`app/globals.css`, page copy) — keep the visual language.
-- **Money:** integer KRW (`int` won amounts, no decimals), formatted `₩#,###` via a shared Thymeleaf helper. Same rule the old app followed with `toLocaleString()`.
-- **Config:** `application.yml` + env-var overrides for secrets. Never commit secrets; dev defaults may exist but must log a loud warning if used with a production profile.
+The authoritative codebase conventions live in **`springboot/conventions/`** (26 documents +
+code templates) — read them before implementing any plan. Plan 000 records the adoption
+decision and the agreed deviations (English error messages, single User entity, avatars
+deferred pending S3).

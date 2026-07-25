@@ -1,28 +1,25 @@
 package com.landgreet;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import jakarta.annotation.PostConstruct;
+import java.util.TimeZone;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableJpaAuditing
+@EnableScheduling
+@EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class LandGreetApplication {
 
-    public static void main(String[] args) {
-        ensureDbDirectory();
-        SpringApplication.run(LandGreetApplication.class, args);
+    @PostConstruct
+    void init() {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
     }
 
-    /** SQLite creates the db file but not its parent directory. */
-    private static void ensureDbDirectory() {
-        String dbPath = System.getenv().getOrDefault("APP_DB_PATH", "data/app-spring.db");
-        Path parent = Path.of(dbPath).toAbsolutePath().getParent();
-        try {
-            Files.createDirectories(parent);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot create database directory " + parent, e);
-        }
+    public static void main(String[] args) {
+        SpringApplication.run(LandGreetApplication.class, args);
     }
 }

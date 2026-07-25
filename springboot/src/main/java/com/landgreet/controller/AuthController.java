@@ -1,0 +1,33 @@
+package com.landgreet.controller;
+
+import com.landgreet.dto.AuthDto;
+import com.landgreet.security.service.AuthFacade;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/v1/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthFacade authFacade;
+
+    /** Sign up and log straight in. */
+    @PostMapping("/signup")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AuthDto.TokenResponse signup(@RequestBody @Valid AuthDto.SignupRequest request) {
+        return authFacade.signup(request);
+    }
+
+    /** Email + password login. */
+    @PostMapping("/login")
+    public AuthDto.TokenResponse login(@RequestBody @Valid AuthDto.LoginRequest request) {
+        return authFacade.login(request);
+    }
+}

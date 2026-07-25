@@ -1,6 +1,7 @@
 # 001 — User Accounts: signup/login, profile CRUD, avatar image
 
 **Status:** Implemented (2026-07-26) — all acceptance criteria verified end-to-end (headless-browser pass + `./gradlew test`)
+**Revision 2026-07-26:** re-implemented as REST API per `springboot/conventions/` (see 000): `/v1/auth/signup|login` (JWT), `/v1/users/me` GET/PATCH, `/v1/users/me/password`, DELETE `/v1/users/me` (password re-auth, soft delete, email slot freed, active bookings cancelled). Avatars deferred pending S3 (convention 21). Sections below describe the original Thymeleaf implementation and remain the behavioural spec.
 **Stack:** Spring Boot + Thymeleaf (see [000](./000-stack-migration.md))
 **Depends on:** project skeleton (Gradle project, Flyway, Spring Security wiring) — created as part of this plan since it's the first feature.
 

@@ -1,7 +1,30 @@
-# 000 — Stack decision: Spring Boot + Thymeleaf
+# 000 — Stack decision: Spring Boot REST API (conventions-driven)
 
-**Status:** Accepted
-**Supersedes:** the Next.js 16 implementation currently at the repo root
+**Status:** Accepted — **Revised 2026-07-26**: full REST API per `springboot/conventions/`
+**Supersedes:** the Next.js 16 implementation at the repo root, and the earlier Thymeleaf server-rendered delivery layer (built, then replaced the same week — git history keeps it)
+
+## Revision 2026-07-26 — team conventions adopted
+
+The team's backend conventions (26 documents + code templates, now at `springboot/conventions/`)
+are the **authoritative architecture reference**; this plan defers to them. Decisions taken with the owner:
+
+- **Full REST API** (`/v1/...`, JWT auth, DTO responses). Thymeleaf pages dropped; a separate
+  frontend (web/mobile) will consume the API.
+- **MySQL** (Docker for local via `springboot/docker-compose.yml`, port **3307** — a native MySQL
+  occupies 3306 on the dev machine; Testcontainers for tests).
+- 4-layer architecture (Controller → Facade → Service → Repository), Lombok, QueryDSL,
+  ModelMapper + BaseMapper, ErrorCode/ApiException, UUID string IDs, Base entities,
+  Flyway timestamp naming (`V{YYYYMMDDHHMMSS}__{author}_{desc}.sql`), package-by-layer.
+- Git: Korean branch names without prefixes; AI commits locally only — push/PR/merge require
+  the owner's explicit go-ahead (conventions 24/25).
+
+**Documented deviations from the conventions** (agreed pragmatics, revisit when relevant):
+1. Error messages are **English** (product speaks English; the convention samples are Korean).
+   The `errorCode` scheme `{DOM}_{HTTP}_{SEQ}` is followed exactly.
+2. **Single `User` entity** instead of the Account/User split — LandGreet has one credential
+   set with a small profile; split later if OAuth providers arrive (convention 13).
+3. **Avatars deferred**: convention 21 requires S3 presigned upload; no S3 account exists yet.
+   The previous local-disk avatar pipeline was removed rather than shipped off-convention.
 
 ## Name
 

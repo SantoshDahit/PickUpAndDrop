@@ -1,55 +1,42 @@
 package com.landgreet.config;
 
-import com.landgreet.user.User;
-import com.landgreet.user.UserRepository;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.landgreet.entity.User;
+import com.landgreet.enums.Role;
+import com.landgreet.service.UserService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/**
- * Flyway seeds structure; this runner seeds the bootstrap credential —
- * passwords don't belong in checked-in SQL.
- */
+/** Flyway seeds structure; credentials are seeded at runtime, never in SQL. */
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class SeedAdminRunner implements ApplicationRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(SeedAdminRunner.class);
     private static final String DEFAULT_PASSWORD = "admin123";
 
-    private final UserRepository users;
+    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
-    private final String adminEmail;
-    private final String adminPassword;
 
-    public SeedAdminRunner(
-            UserRepository users,
-            PasswordEncoder passwordEncoder,
-            @Value("${app.seed.admin-email}") String adminEmail,
-            @Value("${app.seed.admin-password}") String adminPassword) {
-        this.users = users;
-        this.passwordEncoder = passwordEncoder;
-        this.adminEmail = adminEmail;
-        this.adminPassword = adminPassword;
-    }
+    @Value("${app.seed.admin-email}")
+    private String adminEmail;
+
+    @Value("${app.seed.admin-password}")
+    private String adminPassword;
 
     @Override
     public void run(ApplicationArguments args) {
         if (DEFAULT_PASSWORD.equals(adminPassword)) {
-            log.warn("Admin seed password is the built-in default — set SEED_ADMIN_PASSWORD before going to production.");
+            log.warn("Admin seed password is the built-in default — set SEED_ADMIN_PASSWORD before production.");
         }
-        if (users.count() > 0) {
+        if (userService.count() > 0) {
             return;
         }
-        String now = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                .withZone(ZoneOffset.UTC).format(Instant.now());
-        users.save(new User("Admin", adminEmail, passwordEncoder.encode(adminPassword), null, true, now));
+        userService.save(new User(adminEmail, passwordEncoder.encode(adminPassword), "Admin", null, Role.ADMIN));
         log.info("Seeded admin account {}", adminEmail);
     }
 }

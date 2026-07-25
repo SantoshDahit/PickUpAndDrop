@@ -1,0 +1,18 @@
+# Local development database. Tests use Testcontainers and do not need this.
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: landgreet-mysql
+    environment:
+      MYSQL_DATABASE: landgreet
+      MYSQL_USER: landgreet
+      MYSQL_PASSWORD: landgreet
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+volumes:
+  mysql-data:
