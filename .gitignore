@@ -42,3 +42,8 @@ next-env.d.ts
 
 # local database
 data/
+
+# Spring Boot
+springboot/build/
+springboot/.gradle/
+springboot/bin/

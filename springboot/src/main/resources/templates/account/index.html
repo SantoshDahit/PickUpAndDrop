@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: page(~{::title}, ~{::main})}" lang="en">
+<head>
+  <title>Your account — LandGreet</title>
+</head>
+<body>
+<main>
+  <section class="container account-page">
+    <p class="eyebrow">Account</p>
+    <h1>Your account.</h1>
+
+    <div class="card form-card">
+      <h2>Profile</h2>
+
+      <div class="avatar-row">
+        <img th:if="${user.avatarKey != null}" class="avatar avatar-lg"
+             th:src="@{'/' + ${user.avatarKey}}" alt="Your profile photo">
+        <span th:if="${user.avatarKey == null}" class="avatar avatar-lg avatar-fallback"
+              th:text="${#strings.substring(user.name, 0, 1)}">P</span>
+        <div class="avatar-forms">
+          <form th:action="@{/account/avatar}" method="post" enctype="multipart/form-data" class="avatar-upload">
+            <input class="field-file" type="file" name="file" accept="image/*" required>
+            <button class="btn btn-ghost btn-sm" type="submit">Upload photo</button>
+          </form>
+          <form th:if="${user.avatarKey != null}" th:action="@{/account/avatar/delete}" method="post" class="inline">
+            <button class="btn btn-ghost btn-sm" type="submit">Remove photo</button>
+          </form>
+          <p class="muted small">JPG, PNG… up to 5 MB. We crop it square.</p>
+        </div>
+      </div>
+
+      <form th:action="@{/account/profile}" th:object="${profileForm}" method="post">
+        <div class="field">
+          <label class="field-label" for="p_name">Name</label>
+          <input class="field-input" type="text" id="p_name" th:field="*{name}">
+          <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="p_email">Email</label>
+          <input class="field-input" type="email" id="p_email" th:field="*{email}">
+          <p class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="p_phone">Phone</label>
+          <input class="field-input" type="tel" id="p_phone" th:field="*{phone}">
+          <p class="field-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></p>
+        </div>
+        <button class="btn btn-primary" type="submit">Save profile</button>
+      </form>
+    </div>
+
+    <div class="card form-card">
+      <h2>Password</h2>
+      <form th:action="@{/account/password}" th:object="${passwordForm}" method="post">
+        <div class="field">
+          <label class="field-label" for="c_current">Current password</label>
+          <input class="field-input" type="password" id="c_current" th:field="*{currentPassword}">
+          <p class="field-error" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="c_new">New password</label>
+          <input class="field-input" type="password" id="c_new" th:field="*{newPassword}" placeholder="6+ characters">
+          <p class="field-error" th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}"></p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="c_confirm">Repeat new password</label>
+          <input class="field-input" type="password" id="c_confirm" th:field="*{confirmPassword}">
+          <p class="field-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></p>
+        </div>
+        <button class="btn btn-primary" type="submit">Change password</button>
+      </form>
+    </div>
+
+    <div class="card form-card danger-zone">
+      <h2>Danger zone</h2>
+      <p class="muted">
+        Deleting your account logs you out everywhere and cancels pending requests.
+        Your past bookings stay in our records.
+      </p>
+      <form th:action="@{/account/delete}" method="post"
+            onsubmit="return confirm('Delete your account? This cannot be undone.');">
+        <div class="field">
+          <label class="field-label" for="d_password">Confirm with your password</label>
+          <input class="field-input" type="password" id="d_password" name="password" required>
+        </div>
+        <button class="btn btn-danger" type="submit">Delete my account</button>
+      </form>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: landgreet
+
+  datasource:
+    # WAL allows concurrent reads alongside SQLite's single writer;
+    # busy_timeout makes concurrent form posts queue instead of failing.
+    url: jdbc:sqlite:${APP_DB_PATH:data/app-spring.db}?journal_mode=WAL&busy_timeout=5000&foreign_keys=on
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    # Schema is owned by Flyway. `validate` is deliberately not used:
+    # SQLite's loose column typing defeats Hibernate's schema validator.
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.community.dialect.SQLiteDialect
+    open-in-view: false
+
+  flyway:
+    enabled: true
+
+  session:
+    timeout: 30d
+    jdbc:
+      # Session tables are created by Flyway (V2), not by Spring Session.
+      initialize-schema: never
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+server:
+  port: 8080
+
+app:
+  storage-dir: ${APP_STORAGE_DIR:data/uploads}
+  seed:
+    admin-email: admin@landgreet.com
+    admin-password: ${SEED_ADMIN_PASSWORD:admin123}

@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:${java.io.tmpdir}/pud-test-${random.int}.db?journal_mode=WAL&busy_timeout=5000&foreign_keys=on
+
+app:
+  storage-dir: ${java.io.tmpdir}/pud-test-uploads-${random.int}
+  seed:
+    admin-email: admin@landgreet.com
+    admin-password: admin123

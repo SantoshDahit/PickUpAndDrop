@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: page(~{::title}, ~{::main})}" lang="en">
+<head>
+  <title>Sign up — LandGreet</title>
+</head>
+<body>
+<main>
+  <section class="container auth-panel">
+    <p class="eyebrow">Sign up</p>
+    <h1>Create your account.</h1>
+    <p class="muted">Book pickups for you and your group in minutes.</p>
+
+    <form class="card form-card" th:action="@{/signup}" th:object="${signupForm}" method="post">
+      <div class="field">
+        <label class="field-label" for="name">Name</label>
+        <input class="field-input" type="text" id="name" th:field="*{name}" placeholder="Your full name">
+        <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+      </div>
+      <div class="field">
+        <label class="field-label" for="email">Email</label>
+        <input class="field-input" type="email" id="email" th:field="*{email}" placeholder="you@example.com">
+        <p class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+      </div>
+      <div class="field">
+        <label class="field-label" for="phone">Phone <span class="muted">(optional)</span></label>
+        <input class="field-input" type="tel" id="phone" th:field="*{phone}" placeholder="+82 10-0000-0000">
+        <p class="field-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></p>
+      </div>
+      <div class="field">
+        <label class="field-label" for="password">Password</label>
+        <input class="field-input" type="password" id="password" th:field="*{password}" placeholder="6+ characters">
+        <p class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Create account</button>
+    </form>
+
+    <p class="muted center">Already registered? <a th:href="@{/login}">Log in</a></p>
+  </section>
+</main>
+</body>
+</html>
