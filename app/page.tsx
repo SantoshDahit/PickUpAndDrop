@@ -188,7 +188,7 @@ export default async function Home() {
       <section className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
         <div className="text-center mb-10">
           <p className="script text-[24px] mb-1">Where are you headed?</p>
-          <h2 className="text-[2rem]">Popular routes from Incheon</h2>
+          <h2 className="text-[2rem]">Popular routes</h2>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {routes.slice(0, 5).map((r) => {

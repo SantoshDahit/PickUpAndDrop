@@ -1,0 +1,83 @@
+/* LandGreet admin — design tokens shared with the product. */
+:root {
+  --paper: #ffffff; --paper-deep: #f6f6f6; --ink: #141414; --ink-soft: #4b4b4b;
+  --muted: #767676; --line: #eaeaea; --brick: #d92d20; --brick-deep: #b42318;
+  --brick-tint: #fef3f2; --pine: #1a7f37; --pine-tint: #f0f7f1; --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--paper-deep); color: var(--ink);
+  font-family: "Inter", system-ui, -apple-system, sans-serif; font-size: 14.5px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1 { font-size: 24px; letter-spacing: -0.02em; margin-bottom: 4px; }
+h2 { font-size: 16px; letter-spacing: -0.01em; margin-bottom: 12px; }
+a { color: inherit; }
+
+.shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 210px; background: var(--ink); color: #fff; padding: 22px 16px;
+  display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+}
+.sidebar .brand { font-weight: 700; font-size: 16px; margin-bottom: 22px; letter-spacing: -0.02em; }
+.sidebar .brand span { color: #9aa0a6; font-weight: 500; }
+.sidebar a {
+  padding: 9px 12px; border-radius: 8px; text-decoration: none; color: #d0d0d0; font-size: 14px;
+}
+.sidebar a.active, .sidebar a:hover { background: #2b2b2b; color: #fff; }
+.sidebar .spacer { flex: 1; }
+.sidebar button { background: none; border: 1px solid #3a3a3a; color: #d0d0d0; border-radius: 8px; padding: 8px; cursor: pointer; font-size: 13px; }
+.main { flex: 1; padding: 30px 34px; max-width: 1200px; }
+.page-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 18px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); }
+.table-card { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase;
+     letter-spacing: 0.05em; padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+
+.stamp { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 6px;
+  font-size: 12px; font-weight: 550; background: var(--paper-deep); color: var(--ink-soft); white-space: nowrap; }
+.stamp::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.stamp.ok::before { background: var(--pine); }
+.stamp.off::before { background: #b3b3b3; }
+.stamp.warn::before { background: #d97706; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 14px;
+  border-radius: 7px; border: none; font-size: 13.5px; font-weight: 550; cursor: pointer; font-family: inherit;
+  background: var(--paper-deep); color: var(--ink); white-space: nowrap; }
+.btn:hover { background: #ececec; }
+.btn.primary { background: var(--ink); color: #fff; }
+.btn.primary:hover { background: #000; }
+.btn.danger { color: var(--brick-deep); }
+.btn.block { width: 100%; height: 44px; }
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 12.5px; font-weight: 550; color: var(--ink-soft); margin-bottom: 5px; }
+input, select {
+  width: 100%; height: 38px; padding: 0 11px; border: 1px solid var(--line); border-radius: 7px;
+  background: var(--paper); font-size: 14px; font-family: inherit;
+}
+input:focus, select:focus { outline: none; border-color: var(--ink); }
+
+.notice { border-radius: 8px; padding: 10px 14px; font-size: 13.5px; margin-bottom: 14px; }
+.notice.error { background: var(--brick-tint); color: var(--brick-deep); border: 1px solid #f5d0cb; }
+.notice.ok { background: var(--pine-tint); color: var(--pine); border: 1px solid #cfe6d5; }
+
+.login-wrap { min-height: 100vh; display: grid; place-items: center; }
+.login-card { width: 380px; padding: 34px; }
+.login-card h1 { margin-bottom: 2px; }
+.login-card p { margin-bottom: 20px; }
+
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: grid; place-items: center; z-index: 10; }
+.modal { width: 420px; padding: 26px; background: var(--paper); border-radius: var(--radius); }
+.modal h2 { margin-bottom: 14px; }
+.modal .row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+
+.grid-2 { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+.form-card { padding: 20px; }
+.pager { display: flex; gap: 8px; align-items: center; margin-top: 14px; }

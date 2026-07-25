@@ -63,7 +63,7 @@ export default async function RootLayout({
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10Z" />
               </svg>
-              Incheon Airport → anywhere in Korea
+              Airport pickup → anywhere in Korea
             </p>
             <p className="hidden sm:block">Open 24/7 for arrivals · Pay cash, no card needed</p>
           </div>
