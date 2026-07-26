@@ -34,8 +34,8 @@ export default async function TripsPage({
       <div className="mx-auto max-w-3xl px-5 py-12">
         {requested && (
           <div className="notice-ok mb-8">
-            Request received! If other travellers land within a week of you,
-            you&rsquo;ll share a group — open it below to say hi.
+            Request received! Now choose your travel group — travellers landing
+            the same week share one van and split the fare.
           </div>
         )}
         {left && <div className="notice-ok mb-8">You left the group — your booking continues individually.</div>}
@@ -88,9 +88,13 @@ export default async function TripsPage({
                     </div>
                     {t.status === "ACTIVE" && (
                       <div className="mt-5 flex flex-wrap gap-3">
-                        {t.groupId && (
+                        {t.groupId ? (
                           <Link href={`/groups/${t.groupId}`} className="btn btn-primary btn-sm">
                             Open group &amp; chat
+                          </Link>
+                        ) : (
+                          <Link href={`/trips/${t.id}/group`} className="btn btn-primary btn-sm">
+                            Choose your travel group
                           </Link>
                         )}
                         <form action={cancelOwnRequest}>

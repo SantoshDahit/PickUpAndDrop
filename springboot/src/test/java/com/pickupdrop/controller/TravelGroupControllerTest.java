@@ -27,7 +27,7 @@ class TravelGroupControllerTest extends IntegrationTestBase {
     @Test
     void groupIsHiddenFromNonMembersButVisibleToAdmin() throws Exception {
         var member = dataHelper.createUser();
-        var groupId = dataHelper.createGroupBooking(member, LocalDate.now().plusDays(40), 1).getGroupId();
+        var groupId = dataHelper.createGroupBooking(member, dataHelper.groupableDate(40), 1).getGroupId();
 
         mockMvc.perform(get("/v1/groups/" + groupId)
                         .header("Authorization", authHelper.bearerFor(dataHelper.createUser())))
@@ -46,7 +46,7 @@ class TravelGroupControllerTest extends IntegrationTestBase {
     @Test
     void membersChatAndStrangersCannot() throws Exception {
         var member = dataHelper.createUser();
-        var groupId = dataHelper.createGroupBooking(member, LocalDate.now().plusDays(50), 1).getGroupId();
+        var groupId = dataHelper.createGroupBooking(member, dataHelper.groupableDate(50), 1).getGroupId();
 
         mockMvc.perform(post("/v1/groups/" + groupId + "/messages")
                         .header("Authorization", authHelper.bearerFor(member))
@@ -71,8 +71,9 @@ class TravelGroupControllerTest extends IntegrationTestBase {
     void agreementAppearsWhenDatesConverge() throws Exception {
         var u1 = dataHelper.createUser();
         var u2 = dataHelper.createUser();
-        var first = dataHelper.createGroupBooking(u1, LocalDate.now().plusDays(80), 1);
-        var second = dataHelper.createGroupBooking(u2, LocalDate.now().plusDays(83), 1);
+        LocalDate day = dataHelper.groupableDate(80);
+        var first = dataHelper.createGroupBooking(u1, day, 1);
+        var second = dataHelper.createGroupBooking(u2, day.plusDays(3), 1);
         org.assertj.core.api.Assertions.assertThat(second.getGroupId()).isEqualTo(first.getGroupId());
 
         mockMvc.perform(get("/v1/groups/" + first.getGroupId())
@@ -84,20 +85,21 @@ class TravelGroupControllerTest extends IntegrationTestBase {
                         .patch("/v1/bookings/" + second.getId())
                         .header("Authorization", authHelper.bearerFor(u2))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"travelDate\":\"" + LocalDate.now().plusDays(80) + "\"}"))
+                        .content("{\"travelDate\":\"" + day + "\"}"))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/v1/groups/" + first.getGroupId())
                         .header("Authorization", authHelper.bearerFor(u1)))
-                .andExpect(jsonPath("$.agreedDate").value(LocalDate.now().plusDays(80).toString()));
+                .andExpect(jsonPath("$.agreedDate").value(day.toString()));
     }
 
     @Test
     void leavingFlipsToIndividualAndLastLeaverClosesGroup() throws Exception {
         var u1 = dataHelper.createUser();
         var u2 = dataHelper.createUser();
-        var first = dataHelper.createGroupBooking(u1, LocalDate.now().plusDays(120), 3);
-        dataHelper.createGroupBooking(u2, LocalDate.now().plusDays(120), 3);
+        LocalDate leaveDay = dataHelper.groupableDate(120);
+        var first = dataHelper.createGroupBooking(u1, leaveDay, 3);
+        dataHelper.createGroupBooking(u2, leaveDay, 3);
         String groupId = first.getGroupId();
 
         mockMvc.perform(delete("/v1/groups/" + groupId + "/members/me")

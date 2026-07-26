@@ -66,9 +66,28 @@ public class TestDataHelper {
         return userService.getActiveByEmail(email);
     }
 
+    /**
+     * Books a trip then selects a group the plan-008 way: join the first
+     * suggested same-week group, else start a new one.
+     */
     public BookingDto.Response createGroupBooking(User user, LocalDate travelDate, int partySize) {
-        return bookingFacade.create(user.getId(), new BookingDto.PostRequest(
+        BookingDto.Response created = bookingFacade.create(user.getId(), new BookingDto.PostRequest(
                 firstRoute().getId(), null, travelDate, null, partySize, MatchPref.GROUP,
                 "hello from " + user.getName(), null, null));
+        var suggestions = bookingFacade.suggestGroups(user.getId(), created.getId());
+        String groupId = suggestions.getGroups().isEmpty() ? null : suggestions.getGroups().get(0).getId();
+        return bookingFacade.selectGroup(user.getId(), created.getId(),
+                new BookingDto.SelectGroupRequest(groupId));
+    }
+
+    /**
+     * A future date anchored to a landing-week start (day 1/8/15/22) so the
+     * date and date+3 always share a bucket; W5 anchors back to W4.
+     */
+    public LocalDate groupableDate(int offsetDays) {
+        LocalDate d = LocalDate.now().plusDays(offsetDays);
+        int weekStart = Math.min(3, (d.getDayOfMonth() - 1) / 7) * 7 + 1; // 1/8/15/22
+        LocalDate anchored = d.withDayOfMonth(weekStart);
+        return anchored.isBefore(LocalDate.now().plusDays(1)) ? anchored.plusDays(7) : anchored;
     }
 }

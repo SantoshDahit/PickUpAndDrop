@@ -37,7 +37,7 @@ class DriverAssignmentControllerTest extends IntegrationTestBase {
     void groupAssignmentVisibleToMembersWithoutLicense() throws Exception {
         String admin = authHelper.bearerFor(dataHelper.createAdmin());
         var member = dataHelper.createUser();
-        var booking = dataHelper.createGroupBooking(member, LocalDate.now().plusDays(320), 2);
+        var booking = dataHelper.createGroupBooking(member, dataHelper.groupableDate(320), 2);
         var driver = dataHelper.createDriver(6);
 
         mockMvc.perform(put("/v1/admin/groups/" + booking.getGroupId() + "/driver")
@@ -61,7 +61,7 @@ class DriverAssignmentControllerTest extends IntegrationTestBase {
     @Test
     void seatCapacityIsValidated() throws Exception {
         String admin = authHelper.bearerFor(dataHelper.createAdmin());
-        var booking = dataHelper.createGroupBooking(dataHelper.createUser(), LocalDate.now().plusDays(340), 5);
+        var booking = dataHelper.createGroupBooking(dataHelper.createUser(), dataHelper.groupableDate(340), 5);
         var smallCar = dataHelper.createDriver(4);
 
         mockMvc.perform(put("/v1/admin/groups/" + booking.getGroupId() + "/driver")
@@ -75,7 +75,7 @@ class DriverAssignmentControllerTest extends IntegrationTestBase {
     @Test
     void inactiveDriverIsRefused() throws Exception {
         String admin = authHelper.bearerFor(dataHelper.createAdmin());
-        var booking = dataHelper.createGroupBooking(dataHelper.createUser(), LocalDate.now().plusDays(355), 1);
+        var booking = dataHelper.createGroupBooking(dataHelper.createUser(), dataHelper.groupableDate(348), 1);
         var driver = dataHelper.createDriver(6);
         driverFacade.updateStatus(driver.getId(), new DriverDto.StatusPatchRequest(DriverStatus.INACTIVE));
 
@@ -99,7 +99,7 @@ class DriverAssignmentControllerTest extends IntegrationTestBase {
                         .header("Authorization", authHelper.bearerFor(solo))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"routeId\":\"" + dataHelper.firstRoute().getId() + "\"," +
-                                "\"travelDate\":\"" + LocalDate.now().plusDays(270) + "\"," +
+                                "\"travelDate\":\"" + dataHelper.groupableDate(270) + "\"," +
                                 "\"partySize\":2,\"matchPref\":\"INDIVIDUAL\"}"))
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -116,7 +116,7 @@ class DriverAssignmentControllerTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$[0].driver.plateNo").value(driver.getPlateNo()));
 
         // grouped booking refuses direct assignment
-        var grouped = dataHelper.createGroupBooking(dataHelper.createUser(), LocalDate.now().plusDays(280), 1);
+        var grouped = dataHelper.createGroupBooking(dataHelper.createUser(), dataHelper.groupableDate(280), 1);
         mockMvc.perform(put("/v1/admin/bookings/" + grouped.getId() + "/driver")
                         .header("Authorization", admin)
                         .contentType(MediaType.APPLICATION_JSON)

@@ -10,5 +10,9 @@ public interface RouteRepository {
 
     List<Route> findAllActive();
 
+    List<Route> findAllOrdered();
+
     Route save(Route route);
+
+    void delete(Route route);
 }

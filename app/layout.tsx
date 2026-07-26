@@ -4,6 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 import { getSession } from "@/lib/session";
 import { logout } from "@/lib/actions";
+import MobileNav from "@/components/MobileNav";
 
 const geologica = Geologica({
   variable: "--font-geologica",
@@ -43,6 +44,8 @@ function LogoMark({ light = false }: { light?: boolean }) {
   );
 }
 
+const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL ?? "http://localhost:5173";
+
 const navLink =
   "px-3.5 py-2 rounded-full text-[14.5px] font-medium text-ink hover:text-accent-deep transition-colors";
 
@@ -69,15 +72,15 @@ export default async function RootLayout({
           </div>
         </div>
 
-        <header className="border-b border-line bg-surface/90 backdrop-blur-md sticky top-0 z-20">
+        <header className="relative border-b border-line bg-surface/90 backdrop-blur-md sticky top-0 z-20">
           <div className="mx-auto max-w-6xl px-5 h-[74px] flex items-center justify-between">
             <Link href="/">
               <LogoMark />
             </Link>
-            <nav className="flex items-center gap-0.5">
+            <nav className="hidden md:flex items-center gap-0.5">
               {session?.isAdmin ? (
                 <>
-                  <a href={process.env.NEXT_PUBLIC_ADMIN_URL ?? "http://localhost:5173"} className={navLink}>
+                  <a href={ADMIN_URL} className={navLink}>
                     Admin console
                   </a>
                   <Link href="/account" className={navLink}>Account</Link>
@@ -105,6 +108,29 @@ export default async function RootLayout({
                 </>
               )}
             </nav>
+            <MobileNav
+              links={
+                session?.isAdmin
+                  ? [
+                      { href: ADMIN_URL, label: "Admin console", external: true },
+                      { href: "/account", label: "Account" },
+                    ]
+                  : session
+                    ? [
+                        { href: "/trips", label: "My trips" },
+                        { href: "/account", label: "Account" },
+                      ]
+                    : [{ href: "/login", label: "Log in" }]
+              }
+              cta={
+                session?.isAdmin
+                  ? null
+                  : session
+                    ? { href: "/book", label: "Book a pickup" }
+                    : { href: "/signup", label: "Sign up" }
+              }
+              logoutAction={session ? logout : undefined}
+            />
           </div>
         </header>
 

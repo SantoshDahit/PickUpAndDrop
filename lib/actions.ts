@@ -135,15 +135,39 @@ export async function updateTravelDate(formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/login");
   const groupId = String(formData.get("group_id"));
+  const bookingId = String(formData.get("booking_id"));
+  let updated: { groupId: string | null };
   try {
-    await api(`/v1/bookings/${String(formData.get("booking_id"))}`, {
+    updated = await api<{ groupId: string | null }>(`/v1/bookings/${bookingId}`, {
       method: "PATCH",
       body: { travelDate: String(formData.get("travel_date")) },
     });
   } catch (e) {
     redirect(`/groups/${groupId}?error=` + encodeURIComponent(messageOf(e, "Date change failed.")));
   }
+  if (!updated!.groupId) {
+    // The new date lands in a different week — membership ended at the
+    // boundary; send them straight to that week's groups.
+    redirect(`/trips/${bookingId}/group?moved=1`);
+  }
   revalidatePath(`/groups/${groupId}`);
+}
+
+export async function selectGroup(formData: FormData) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  const bookingId = String(formData.get("booking_id"));
+  const groupId = String(formData.get("group_id") ?? "").trim() || null;
+  let result: { groupId: string | null };
+  try {
+    result = await api<{ groupId: string | null }>(`/v1/bookings/${bookingId}/group`, {
+      method: "PUT",
+      body: { groupId },
+    });
+  } catch (e) {
+    redirect(`/trips/${bookingId}/group?error=` + encodeURIComponent(messageOf(e, "Joining failed.")));
+  }
+  redirect(`/groups/${result!.groupId}?joined=1`);
 }
 
 export async function leaveGroup(formData: FormData) {

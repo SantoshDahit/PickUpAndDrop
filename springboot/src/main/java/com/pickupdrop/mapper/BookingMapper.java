@@ -16,6 +16,7 @@ public class BookingMapper extends BaseMapper<Booking, BookingDto> {
         this.driverMapper = driverMapper;
         this.registerDtoMapping(BookingDto.Response.class);
         this.registerDtoMapping(BookingDto.SummaryResponse.class);
+        this.registerDtoMapping(BookingDto.AdminDetailResponse.class);
     }
 
     public BookingDto.Response toResponse(Booking entity) {
@@ -30,6 +31,15 @@ public class BookingMapper extends BaseMapper<Booking, BookingDto> {
         BookingDto.SummaryResponse response = super.toDto(entity, BookingDto.SummaryResponse.class);
         response.setGroupId(entity.getTravelGroup() == null ? null : entity.getTravelGroup().getId());
         response.setDriver(driverMapper.toPublicResponse(entity.effectiveDriver()));
+        return response;
+    }
+
+    public BookingDto.AdminDetailResponse toAdminDetailResponse(Booking entity) {
+        BookingDto.AdminDetailResponse response = super.toDto(entity, BookingDto.AdminDetailResponse.class);
+        response.setGroupId(entity.getTravelGroup() == null ? null : entity.getTravelGroup().getId());
+        response.setDriver(driverMapper.toPublicResponse(entity.effectiveDriver()));
+        response.setCustomer(new BookingDto.CustomerResponse(
+                entity.getUser().getName(), entity.getUser().getEmail(), entity.getUser().getPhone()));
         return response;
     }
 }

@@ -12,9 +12,14 @@ public class RouteMapper extends BaseMapper<Route, RouteDto> {
     protected RouteMapper(ModelMapper modelMapper) {
         super(modelMapper, Route.class);
         this.registerDtoMapping(RouteDto.Response.class);
+        this.registerDtoMapping(RouteDto.AdminResponse.class);
     }
 
     public RouteDto.Response toResponse(Route entity) {
         return super.toDto(entity, RouteDto.Response.class);
+    }
+
+    public RouteDto.AdminResponse toAdminResponse(Route entity) {
+        return super.toDto(entity, RouteDto.AdminResponse.class);
     }
 }

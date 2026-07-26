@@ -10,13 +10,13 @@ export default async function GroupPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; joined?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
 
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, joined } = await searchParams;
 
   let view: GroupView;
   let messages: Message[];
@@ -40,9 +40,14 @@ export default async function GroupPage({
       <PageHeader
         script="Your travel group"
         title={`${view.route.fromLocation} → ${view.route.toLocation}`}
-        subtitle="Travellers landing within a week of each other. Chat below and settle on one landing day — one van, split fare."
+        subtitle={
+          view.weekStart && view.weekEnd
+            ? `Landing week ${new Date(view.weekStart + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" })} – ${new Date(view.weekEnd + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" })} — chat below and settle on one landing day. One van, split fare.`
+            : "Chat below and settle on one landing day — one van, split fare."
+        }
       />
       <div className="mx-auto max-w-5xl px-5 py-12">
+        {joined && <div className="notice-ok mb-6">You&rsquo;re in — say hi to the group below!</div>}
         {error && <div className="notice-error mb-6">{error}</div>}
         {view.agreedDate && (
           <div className="notice-ok mb-6">

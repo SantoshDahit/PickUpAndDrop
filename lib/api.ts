@@ -99,12 +99,24 @@ export interface OpenRide {
   seatsLeft: number;
 }
 
+export interface GroupSuggestions {
+  weekStart: string;
+  weekEnd: string;
+  groups: {
+    id: string; memberCount: number; seatsLeft: number;
+    earliestDate: string | null; latestDate: string | null;
+    official: boolean; targetDate: string | null;
+  }[];
+}
+
 export interface GroupView {
   id: string;
   route: { fromLocation: string; toLocation: string };
   status: string;
   agreedDate: string | null;
   driver: DriverPublic | null;
+  weekStart: string | null;
+  weekEnd: string | null;
   members: { firstName: string; partySize: number; travelDate: string; intro: string | null; me: boolean }[];
 }
 

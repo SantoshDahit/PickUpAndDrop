@@ -24,4 +24,6 @@ public interface BookingRepository {
 
     /** Any active ride (group or individual) with this driver dated {@code from} or later? */
     boolean existsUpcomingByDriverId(String driverId, LocalDate from);
+
+    boolean existsByRouteId(String routeId);
 }

@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface RouteJpaRepository extends JpaRepository<Route, String> {
 
     List<Route> findAllByActiveTrueOrderByCreatedAtAsc();
+
+    List<Route> findAllByOrderByCreatedAtAsc();
 }

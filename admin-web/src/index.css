@@ -140,3 +140,26 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 .grid-2 { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
 .form-card { padding: 22px; }
 .pager { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+
+/* ---------- Small screens: sidebar becomes a top bar ---------- */
+@media (max-width: 760px) {
+  .shell { flex-direction: column; }
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 10px 14px;
+  }
+  .sidebar .brand { margin-bottom: 0; margin-right: 12px; font-size: 15px; }
+  .sidebar a { padding: 7px 12px; font-size: 13px; }
+  .sidebar .spacer { flex: 1; }
+  .sidebar button { padding: 6px 12px; font-size: 12.5px; }
+  .main { padding: 20px 16px; max-width: 100%; }
+  .page-head { flex-wrap: wrap; gap: 10px; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .modal { width: calc(100vw - 32px) !important; }
+  /* Tables scroll sideways instead of stacking words vertically */
+  .table-card td { white-space: nowrap; }
+}

@@ -5,10 +5,10 @@ const EMPTY = { name: '', phone: '', licenseNo: '', vehicle: '', plateNo: '', se
 
 export default function Drivers() {
   const [page, setPage] = useState<Page<Driver> | null>(null)
-  const [form, setForm] = useState({ ...EMPTY })
   const [error, setError] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [registering, setRegistering] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -22,18 +22,6 @@ export default function Drivers() {
 
   function note(ok: string | null, err: string | null) {
     setFlash(ok); setError(err)
-  }
-
-  async function create(e: React.FormEvent) {
-    e.preventDefault()
-    try {
-      await api('/v1/admin/drivers', { method: 'POST', body: JSON.stringify(form) })
-      setForm({ ...EMPTY })
-      note(`Driver ${form.name} registered.`, null)
-      load()
-    } catch (err) {
-      note(null, err instanceof Error ? err.message : 'Create failed')
-    }
   }
 
   async function toggleStatus(d: Driver) {
@@ -67,30 +55,11 @@ export default function Drivers() {
           <h1>Drivers</h1>
           <p className="muted small">{page ? `${page.page.totalElements} on the roster` : 'Loading…'}</p>
         </div>
+        <button className="btn primary" onClick={() => setRegistering(true)}>+ Register driver</button>
       </div>
       {error && <div className="notice error">{error}</div>}
       {flash && <div className="notice ok">{flash}</div>}
-      <div className="grid-2">
-        <form className="card form-card" onSubmit={create}>
-          <h2>Register driver</h2>
-          <div className="field"><label>Name</label>
-            <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
-          <div className="field"><label>Phone</label>
-            <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
-          <div className="field"><label>License no.</label>
-            <input value={form.licenseNo} onChange={e => setForm({ ...form, licenseNo: e.target.value })} /></div>
-          <div className="field"><label>Vehicle model</label>
-            <input value={form.vehicle} onChange={e => setForm({ ...form, vehicle: e.target.value })} placeholder="Hyundai Staria" /></div>
-          <div className="field"><label>Plate no.</label>
-            <input value={form.plateNo} onChange={e => setForm({ ...form, plateNo: e.target.value })} placeholder="12가3456" /></div>
-          <div className="field"><label>Passenger seats</label>
-            <select value={form.seats} onChange={e => setForm({ ...form, seats: Number(e.target.value) })}>
-              {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
-            </select></div>
-          <button className="btn primary block" type="submit">Register</button>
-        </form>
-
-        <div className="card table-card">
+      <div className="card table-card">
           <table>
             <thead>
               <tr><th>Name</th><th>Phone</th><th>Vehicle</th><th>Seats</th><th>Status</th><th></th></tr>
@@ -120,8 +89,13 @@ export default function Drivers() {
               )}
             </tbody>
           </table>
-        </div>
       </div>
+      {registering && (
+        <RegisterDialog
+          onClose={() => setRegistering(false)}
+          onDone={(name) => { setRegistering(false); note(`Driver ${name} registered.`, null); load() }}
+        />
+      )}
       {detailId && (
         <DriverDetail
           driverId={detailId}
@@ -131,6 +105,52 @@ export default function Drivers() {
         />
       )}
     </>
+  )
+}
+
+function RegisterDialog({ onClose, onDone }: { onClose: () => void; onDone: (name: string) => void }) {
+  const [form, setForm] = useState({ ...EMPTY })
+  const [localError, setLocalError] = useState<string | null>(null)
+
+  async function create(e: React.FormEvent) {
+    e.preventDefault()
+    setLocalError(null)
+    try {
+      await api('/v1/admin/drivers', { method: 'POST', body: JSON.stringify(form) })
+      onDone(form.name)
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Create failed')
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" style={{ width: 440, maxHeight: '88vh', overflowY: 'auto' }}
+           onClick={e => e.stopPropagation()}>
+        <h2>Register driver</h2>
+        <form onSubmit={create}>
+          <div className="field"><label>Name</label>
+            <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required autoFocus /></div>
+          <div className="field"><label>Phone</label>
+            <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+          <div className="field"><label>License no.</label>
+            <input value={form.licenseNo} onChange={e => setForm({ ...form, licenseNo: e.target.value })} /></div>
+          <div className="field"><label>Vehicle model</label>
+            <input value={form.vehicle} onChange={e => setForm({ ...form, vehicle: e.target.value })} placeholder="Hyundai Staria" /></div>
+          <div className="field"><label>Plate no.</label>
+            <input value={form.plateNo} onChange={e => setForm({ ...form, plateNo: e.target.value })} placeholder="12가3456" /></div>
+          <div className="field"><label>Passenger seats</label>
+            <select value={form.seats} onChange={e => setForm({ ...form, seats: Number(e.target.value) })}>
+              {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
+            </select></div>
+          {localError && <div className="notice error">{localError}</div>}
+          <div className="row">
+            <button type="button" className="btn" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn primary">Register</button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }
 

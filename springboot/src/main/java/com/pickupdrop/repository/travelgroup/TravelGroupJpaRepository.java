@@ -9,7 +9,12 @@ public interface TravelGroupJpaRepository extends JpaRepository<TravelGroup, Str
 
     List<TravelGroup> findAllByRouteIdAndStatusOrderByCreatedAtAsc(String routeId, GroupStatus status);
 
+    List<TravelGroup> findAllByRouteIdAndWeekBucketAndStatusOrderByCreatedAtAsc(
+            String routeId, String weekBucket, GroupStatus status);
+
     List<TravelGroup> findAllByDriverId(String driverId);
 
     List<TravelGroup> findAllByPublicRideTrueAndStatusOrderByTargetDateAsc(GroupStatus status);
+
+    boolean existsByRouteId(String routeId);
 }

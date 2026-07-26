@@ -32,8 +32,18 @@ public class TravelGroupService {
     }
 
     @Transactional(readOnly = true)
+    public List<TravelGroup> getOpenByRouteIdAndWeekBucket(String routeId, String weekBucket) {
+        return travelGroupRepository.findOpenByRouteIdAndWeekBucket(routeId, weekBucket);
+    }
+
+    @Transactional(readOnly = true)
     public List<TravelGroup> getOpenPublicRides() {
         return travelGroupRepository.findOpenPublicRides();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsByRouteId(String routeId) {
+        return travelGroupRepository.existsByRouteId(routeId);
     }
 
     @Transactional

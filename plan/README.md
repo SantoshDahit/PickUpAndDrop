@@ -14,6 +14,7 @@ Design docs for **Pickup&Drop** — airport pickups anywhere in Korea. (Named Pi
 | [005](./005-driver-accounts.md) | Driver accounts — DRIVER role, self profile, my rides | Implemented (REST) |
 | [006](./006-admin-rides-and-console.md) | Admin-published joinable rides + formal console redesign | Implemented |
 | [007](./007-customer-web.md) | Customer frontend — the Next.js app ported to the /v1 API | Implemented |
+| [008](./008-week-bucket-groups.md) | Landing-week groups — book first, then choose your group | Implemented |
 
 Backlog (no spec yet, add as `004+` when picked up): pricing/fare tiers + settlement (introduces the `ride` entity, see 003 §4.1), booking lifecycle/ops workflow, landing page + fare calculator, email notifications, driver ride-status workflow (picked-up/completed), avatars & driver photos (blocked on S3, convention 21), i18n (KO/EN).
 

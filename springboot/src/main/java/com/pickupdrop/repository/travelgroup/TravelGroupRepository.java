@@ -10,9 +10,13 @@ public interface TravelGroupRepository {
 
     List<TravelGroup> findOpenByRouteId(String routeId);
 
+    List<TravelGroup> findOpenByRouteIdAndWeekBucket(String routeId, String weekBucket);
+
     List<TravelGroup> findAllByDriverId(String driverId);
 
     List<TravelGroup> findOpenPublicRides();
+
+    boolean existsByRouteId(String routeId);
 
     TravelGroup save(TravelGroup travelGroup);
 }

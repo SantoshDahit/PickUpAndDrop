@@ -25,14 +25,16 @@ const PHOTOS: Record<string, string> = {
   palace: "https://images.unsplash.com/photo-1583833008338-31a6657917ab",
   food: "https://images.unsplash.com/photo-1580651315530-69c8e0026377",
   plane: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05",
+  map: "https://images.unsplash.com/photo-1488646953014-85cb44e25828",
 };
 
-function photoFor(route: Route): string {
+function photoFor(route: Route, index: number): string {
   const to = route.to_location.toLowerCase();
-  for (const key of ["seoul", "daejeon", "busan"]) {
-    if (to.includes(key)) return PHOTOS[key];
+  for (const key of ["seoul", "daejeon", "busan", "incheon"]) {
+    if (to.includes(key)) return PHOTOS[key] ?? PHOTOS.default;
   }
-  return PHOTOS.default;
+  // Alternate fallbacks so neighbouring cards don't repeat the same photo.
+  return index % 2 === 0 ? PHOTOS.default : PHOTOS.palace;
 }
 
 function cheapestFare(tiers: PriceTier[], routeId: string): number | null {
@@ -192,11 +194,11 @@ export default async function Home() {
           <h2 className="text-[2rem]">Popular routes</h2>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {routes.slice(0, 5).map((r) => {
+          {routes.slice(0, 5).map((r, i) => {
             const from = cheapestFare(tiers, r.id);
             return (
               <Link key={r.id} href="/book" className="photo-card h-[300px] group">
-                <img src={`${photoFor(r)}?w=800&h=600&fit=crop`} alt={r.to_location} />
+                <img src={`${photoFor(r, i)}?w=800&h=600&fit=crop`} alt={r.to_location} />
                 <div className="photo-card-body">
                   <p className="text-[13px] text-white/75 mb-0.5">{r.from_location}</p>
                   <div className="flex items-end justify-between gap-3">
@@ -212,7 +214,7 @@ export default async function Home() {
             );
           })}
           <Link href="/book" className="photo-card h-[300px] group">
-            <img src={`${PHOTOS.default}?w=800&h=600&fit=crop`} alt="Anywhere in Korea" />
+            <img src={`${PHOTOS.map}?w=800&h=600&fit=crop`} alt="Anywhere in Korea" />
             <div className="photo-card-body">
               <p className="text-[13px] text-white/75 mb-0.5">Somewhere else?</p>
               <div className="flex items-end justify-between gap-3">

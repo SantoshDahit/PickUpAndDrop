@@ -33,6 +33,12 @@ public class BookingDto {
     ) {
     }
 
+    /** null groupId = start a new group for the booking's landing week. */
+    public record SelectGroupRequest(
+            String groupId
+    ) {
+    }
+
     @Getter
     @NoArgsConstructor
     public static class Response {
@@ -85,6 +91,53 @@ public class BookingDto {
 
         public void setGroupId(String groupId) {
             this.groupId = groupId;
+        }
+    }
+
+    /** Admin ops view — includes who booked and how to reach them. */
+    @Getter
+    @NoArgsConstructor
+    public static class AdminDetailResponse {
+        private String id;
+        private RouteDto.Response route;
+        private String groupId;
+        private LocalDate travelDate;
+        private String flightNo;
+        private int partySize;
+        private MatchPref matchPref;
+        private String intro;
+        private String contact;
+        private String notes;
+        private BookingStatus status;
+        private DriverDto.PublicResponse driver;   // effective: group's when grouped
+        private CustomerResponse customer;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+
+        public void setDriver(DriverDto.PublicResponse driver) {
+            this.driver = driver;
+        }
+
+        public void setGroupId(String groupId) {
+            this.groupId = groupId;
+        }
+
+        public void setCustomer(CustomerResponse customer) {
+            this.customer = customer;
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    public static class CustomerResponse {
+        private String name;
+        private String email;
+        private String phone;
+
+        public CustomerResponse(String name, String email, String phone) {
+            this.name = name;
+            this.email = email;
+            this.phone = phone;
         }
     }
 

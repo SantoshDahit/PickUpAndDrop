@@ -80,7 +80,7 @@ class DriverAdminControllerTest extends IntegrationTestBase {
     void deleteRefusedWhileUpcomingRidesExist() throws Exception {
         String admin = authHelper.bearerFor(dataHelper.createAdmin());
         var driver = dataHelper.createDriver(6);
-        var booking = dataHelper.createGroupBooking(dataHelper.createUser(), LocalDate.now().plusDays(300), 2);
+        var booking = dataHelper.createGroupBooking(dataHelper.createUser(), dataHelper.groupableDate(300), 2);
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .put("/v1/admin/groups/" + booking.getGroupId() + "/driver")

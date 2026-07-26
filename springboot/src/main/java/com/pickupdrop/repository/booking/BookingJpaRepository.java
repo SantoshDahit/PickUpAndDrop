@@ -20,4 +20,6 @@ public interface BookingJpaRepository extends JpaRepository<Booking, String> {
 
     boolean existsByTravelGroupDriverIdAndStatusAndTravelDateGreaterThanEqual(
             String driverId, BookingStatus status, LocalDate from);
+
+    boolean existsByRouteId(String routeId);
 }

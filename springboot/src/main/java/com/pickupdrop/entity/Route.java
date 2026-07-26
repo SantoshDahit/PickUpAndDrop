@@ -34,4 +34,11 @@ public class Route extends BaseTimeEntity {
         this.toLocation = toLocation;
         this.active = true;
     }
+
+    /** Partial update: null = keep. */
+    public void update(String fromLocation, String toLocation, Boolean active) {
+        if (fromLocation != null && !fromLocation.isBlank()) this.fromLocation = fromLocation.trim();
+        if (toLocation != null && !toLocation.isBlank()) this.toLocation = toLocation.trim();
+        if (active != null) this.active = active;
+    }
 }

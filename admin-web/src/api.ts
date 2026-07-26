@@ -61,3 +61,16 @@ export interface GroupView {
   id: string; route: Route; status: string; agreedDate: string | null; driver: DriverPublic | null;
   members: { firstName: string; partySize: number; travelDate: string; intro: string | null; me: boolean }[];
 }
+export interface Tier { groupSize: number; pricePerPerson: number }
+export interface AdminRoute {
+  id: string; fromLocation: string; toLocation: string; active: boolean; tiers: Tier[];
+  createdAt: string; updatedAt: string | null;
+}
+export interface BookingAdminDetail {
+  id: string; route: Route | null; groupId: string | null; travelDate: string;
+  flightNo: string | null; partySize: number; matchPref: 'GROUP' | 'INDIVIDUAL';
+  intro: string | null; contact: string | null; notes: string | null;
+  status: 'ACTIVE' | 'CANCELLED'; driver: DriverPublic | null;
+  customer: { name: string; email: string; phone: string | null };
+  createdAt: string; updatedAt: string | null;
+}

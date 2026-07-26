@@ -49,7 +49,7 @@ class OpenRideControllerTest extends IntegrationTestBase {
     @Test
     void publishBrowseJoinWindowFlow() throws Exception {
         String admin = authHelper.bearerFor(dataHelper.createAdmin());
-        LocalDate target = LocalDate.now().plusDays(130);
+        LocalDate target = dataHelper.groupableDate(130);
         String rideId = publishRide(admin, target);
 
         // any signed-in user can browse; the card carries no personal data
@@ -73,7 +73,7 @@ class OpenRideControllerTest extends IntegrationTestBase {
         mockMvc.perform(get("/v1/groups/open").header("Authorization", user))
                 .andExpect(jsonPath("$.[?(@.id == '" + rideId + "')].seatsLeft").value(4));
 
-        // out-of-window join refused (target anchors the span)
+        // a landing day in another week is refused (bucket boundary)
         mockMvc.perform(post("/v1/bookings")
                         .header("Authorization", authHelper.bearerFor(dataHelper.createUser()))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -83,38 +83,58 @@ class OpenRideControllerTest extends IntegrationTestBase {
     }
 
     @Test
-    void organicGroupsAreNeverJoinableOrBrowsable() throws Exception {
+    void organicGroupsAreNeverBrowsableAndBucketGuardsJoins() throws Exception {
         var member = dataHelper.createUser();
-        var organic = dataHelper.createGroupBooking(member, LocalDate.now().plusDays(175), 1);
+        LocalDate day = dataHelper.groupableDate(175);
+        var organic = dataHelper.createGroupBooking(member, day, 1);
 
+        // never in the public browse list
         String stranger = authHelper.bearerFor(dataHelper.createUser());
-        mockMvc.perform(post("/v1/bookings").header("Authorization", stranger)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(joinJson(LocalDate.now().plusDays(175), 1, organic.getGroupId())))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorCode").value("GRP_BR_001"));
-
         String browse = mockMvc.perform(get("/v1/groups/open").header("Authorization", stranger))
                 .andReturn().getResponse().getContentAsString();
         assertThat(browse).doesNotContain(organic.getGroupId());
+
+        // joining by id from another landing week is refused
+        mockMvc.perform(post("/v1/bookings").header("Authorization", stranger)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(joinJson(day.plusDays(10), 1, organic.getGroupId())))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("GRP_BR_002"));
     }
 
     @Test
-    void organicMatchingSeedsIntoPublishedRide() throws Exception {
+    void publishedRideAppearsInSameWeekSuggestions() throws Exception {
         String admin = authHelper.bearerFor(dataHelper.createAdmin());
-        LocalDate target = LocalDate.now().plusDays(165);
+        LocalDate target = dataHelper.groupableDate(165);
         String rideId = publishRide(admin, target);
 
-        // plain GROUP booking near the target auto-joins the empty published ride
-        var outcome = dataHelper.createGroupBooking(dataHelper.createUser(), target.minusDays(2), 1);
-        assertThat(outcome.getGroupId()).isEqualTo(rideId);
-        assertThat(outcome.getJoinedExistingGroup()).isTrue();
+        // book (no group) one day later, same landing week → the ride is suggested as official
+        var user = dataHelper.createUser();
+        var booked = mockMvc.perform(post("/v1/bookings").header("Authorization", authHelper.bearerFor(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"routeId\":\"" + dataHelper.firstRoute().getId() + "\"," +
+                                "\"travelDate\":\"" + target.plusDays(1) + "\",\"partySize\":1,\"matchPref\":\"GROUP\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String bookingId = JSON.readTree(booked.getResponse().getContentAsString()).get("id").asText();
+
+        mockMvc.perform(get("/v1/bookings/" + bookingId + "/group-suggestions")
+                        .header("Authorization", authHelper.bearerFor(user)))
+                .andExpect(jsonPath("$.groups[?(@.id == '" + rideId + "')].official").value(true));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/v1/bookings/" + bookingId + "/group")
+                        .header("Authorization", authHelper.bearerFor(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"groupId\":\"" + rideId + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.groupId").value(rideId));
     }
 
     @Test
     void seatCapacityGuard() throws Exception {
         String admin = authHelper.bearerFor(dataHelper.createAdmin());
-        LocalDate target = LocalDate.now().plusDays(230);
+        LocalDate target = dataHelper.groupableDate(230);
         String rideId = publishRide(admin, target);
 
         mockMvc.perform(post("/v1/bookings").header("Authorization", authHelper.bearerFor(dataHelper.createUser()))
@@ -131,7 +151,7 @@ class OpenRideControllerTest extends IntegrationTestBase {
     @Test
     void closeGuardsAndEmptyRideStaysOpen() throws Exception {
         String admin = authHelper.bearerFor(dataHelper.createAdmin());
-        LocalDate target = LocalDate.now().plusDays(290);
+        LocalDate target = dataHelper.groupableDate(290);
         String rideId = publishRide(admin, target);
 
         String user = authHelper.bearerFor(dataHelper.createUser());

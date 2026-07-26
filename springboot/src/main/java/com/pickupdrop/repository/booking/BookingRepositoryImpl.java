@@ -51,6 +51,11 @@ public class BookingRepositoryImpl implements BookingRepository {
     }
 
     @Override
+    public boolean existsByRouteId(String routeId) {
+        return bookingJpaRepository.existsByRouteId(routeId);
+    }
+
+    @Override
     public boolean existsUpcomingByDriverId(String driverId, LocalDate from) {
         return bookingJpaRepository.existsByDriverIdAndStatusAndTravelDateGreaterThanEqual(
                 driverId, BookingStatus.ACTIVE, from)

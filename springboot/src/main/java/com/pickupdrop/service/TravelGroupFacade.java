@@ -4,6 +4,7 @@ import com.pickupdrop.dto.GroupMessageDto;
 import com.pickupdrop.dto.TravelGroupDto;
 import com.pickupdrop.entity.Booking;
 import com.pickupdrop.entity.GroupMessage;
+import com.pickupdrop.domain.WeekBucket;
 import com.pickupdrop.entity.Route;
 import com.pickupdrop.entity.TravelGroup;
 import com.pickupdrop.enums.GroupStatus;
@@ -39,7 +40,8 @@ public class TravelGroupFacade {
             throw new ApiException(ErrorCode.BOOKING_DATE_IS_INVALID);
         }
         Route route = routeService.getActiveById(request.routeId());
-        TravelGroup ride = travelGroupService.save(new TravelGroup(route, request.targetDate()));
+        TravelGroup ride = travelGroupService.save(TravelGroup.published(
+                route, request.targetDate(), WeekBucket.of(request.targetDate())));
         return toOpenRide(ride, List.of());
     }
 
@@ -92,9 +94,12 @@ public class TravelGroupFacade {
                 && members.stream().map(Booking::getTravelDate).distinct().count() == 1
                 ? members.get(0).getTravelDate() : null;
 
+        String bucket = group.getWeekBucket();
         return new TravelGroupDto.Response(group.getId(), routeMapper.toResponse(group.getRoute()),
                 group.getStatus(), memberResponses, agreedDate,
-                driverMapper.toPublicResponse(group.getDriver()));
+                driverMapper.toPublicResponse(group.getDriver()),
+                bucket == null ? null : WeekBucket.startOf(bucket),
+                bucket == null ? null : WeekBucket.endOf(bucket));
     }
 
     @Transactional(readOnly = true)

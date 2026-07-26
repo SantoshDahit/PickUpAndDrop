@@ -55,4 +55,9 @@ public class BookingService {
     public boolean existsUpcomingByDriverId(String driverId, LocalDate from) {
         return bookingRepository.existsUpcomingByDriverId(driverId, from);
     }
+
+    @Transactional(readOnly = true)
+    public boolean existsByRouteId(String routeId) {
+        return bookingRepository.existsByRouteId(routeId);
+    }
 }

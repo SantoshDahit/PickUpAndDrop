@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, ApiError, type BookingSummary, type Driver, type Page } from '../api'
+import { api, ApiError, type BookingAdminDetail, type BookingSummary, type Driver, type Page } from '../api'
 
 export default function Bookings() {
   const [page, setPage] = useState<Page<BookingSummary> | null>(null)
@@ -7,6 +7,7 @@ export default function Bookings() {
   const [error, setError] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   const [assignTarget, setAssignTarget] = useState<BookingSummary | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -50,7 +51,12 @@ export default function Bookings() {
           <tbody>
             {page?.content.map(b => (
               <tr key={b.id}>
-                <td>{b.route ? `${b.route.fromLocation} → ${b.route.toLocation}` : '—'}</td>
+                <td>
+                  <a href="#" onClick={e => { e.preventDefault(); setDetailId(b.id) }}
+                     style={{ fontWeight: 550 }}>
+                    {b.route ? `${b.route.fromLocation} → ${b.route.toLocation}` : '—'}
+                  </a>
+                </td>
                 <td>{b.travelDate}{b.flightNo ? <span className="muted"> · {b.flightNo}</span> : null}</td>
                 <td>{b.partySize}</td>
                 <td>{b.groupId
@@ -93,7 +99,88 @@ export default function Bookings() {
           onError={m => setError(m)}
         />
       )}
+      {detailId && (
+        <BookingDetail
+          bookingId={detailId}
+          onClose={() => setDetailId(null)}
+          onChanged={m => { setFlash(m); setError(null); load() }}
+          onError={m => { setError(m); setFlash(null) }}
+        />
+      )}
     </>
+  )
+}
+
+function BookingDetail({ bookingId, onClose, onChanged, onError }: {
+  bookingId: string
+  onClose: () => void
+  onChanged: (message: string) => void
+  onError: (message: string) => void
+}) {
+  const [b, setB] = useState<BookingAdminDetail | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
+
+  const loadDetail = useCallback(async () => {
+    try {
+      setB(await api<BookingAdminDetail>(`/v1/admin/bookings/${bookingId}`))
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Failed to load booking')
+      onClose()
+    }
+  }, [bookingId, onError, onClose])
+
+  useEffect(() => { loadDetail() }, [loadDetail])
+
+  async function cancel() {
+    if (!confirm('Cancel this booking on the customer\'s behalf?')) return
+    setLocalError(null)
+    try {
+      await api(`/v1/admin/bookings/${bookingId}`, { method: 'DELETE' })
+      onChanged('Booking cancelled.')
+      loadDetail()
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Cancel failed')
+    }
+  }
+
+  if (!b) return null
+  const row = (label: string, value: React.ReactNode) => (
+    <p style={{ marginBottom: 6 }}>
+      <span className="muted small" style={{ display: 'inline-block', width: 110 }}>{label}</span>
+      {value ?? <span className="muted">—</span>}
+    </p>
+  )
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" style={{ width: 480, maxHeight: '88vh', overflowY: 'auto' }}
+           onClick={e => e.stopPropagation()}>
+        <h2>
+          {b.route ? `${b.route.fromLocation} → ${b.route.toLocation}` : 'Booking'}
+          {' '}<span className={`stamp ${b.status === 'ACTIVE' ? 'ok' : 'off'}`}>{b.status.toLowerCase()}</span>
+        </h2>
+
+        {row('Customer', <>{b.customer.name} · {b.customer.email}{b.customer.phone ? ` · ${b.customer.phone}` : ''}</>)}
+        {row('Reach at', b.contact)}
+        {row('Landing day', <>{b.travelDate}{b.flightNo ? ` · flight ${b.flightNo}` : ''}</>)}
+        {row('Party', `${b.partySize} ${b.partySize === 1 ? 'person' : 'people'}`)}
+        {row('Ride', b.groupId ? `shared group …${b.groupId.slice(-6)}` : 'individual')}
+        {row('Driver', b.driver ? `${b.driver.name}${b.driver.vehicle ? ` · ${b.driver.vehicle}` : ''}${b.driver.plateNo ? ` · ${b.driver.plateNo}` : ''}` : null)}
+        {row('Intro', b.intro)}
+        {row('Notes', b.notes)}
+        {row('Booked', new Date(b.createdAt).toLocaleString())}
+
+        {localError && <div className="notice error" style={{ marginTop: 10 }}>{localError}</div>}
+
+        <div className="row" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 18 }}>
+          <span>
+            {b.status === 'ACTIVE' && (
+              <button className="btn danger" onClick={cancel}>Cancel booking</button>
+            )}
+          </span>
+          <button className="btn" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
   )
 }
 

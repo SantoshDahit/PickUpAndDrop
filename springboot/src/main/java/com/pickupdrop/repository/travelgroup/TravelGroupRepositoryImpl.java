@@ -24,6 +24,12 @@ public class TravelGroupRepositoryImpl implements TravelGroupRepository {
     }
 
     @Override
+    public List<TravelGroup> findOpenByRouteIdAndWeekBucket(String routeId, String weekBucket) {
+        return travelGroupJpaRepository.findAllByRouteIdAndWeekBucketAndStatusOrderByCreatedAtAsc(
+                routeId, weekBucket, GroupStatus.OPEN);
+    }
+
+    @Override
     public List<TravelGroup> findAllByDriverId(String driverId) {
         return travelGroupJpaRepository.findAllByDriverId(driverId);
     }
@@ -31,6 +37,11 @@ public class TravelGroupRepositoryImpl implements TravelGroupRepository {
     @Override
     public List<TravelGroup> findOpenPublicRides() {
         return travelGroupJpaRepository.findAllByPublicRideTrueAndStatusOrderByTargetDateAsc(GroupStatus.OPEN);
+    }
+
+    @Override
+    public boolean existsByRouteId(String routeId) {
+        return travelGroupJpaRepository.existsByRouteId(routeId);
     }
 
     @Override

@@ -23,7 +23,17 @@ public class RouteRepositoryImpl implements RouteRepository {
     }
 
     @Override
+    public List<Route> findAllOrdered() {
+        return routeJpaRepository.findAllByOrderByCreatedAtAsc();
+    }
+
+    @Override
     public Route save(Route route) {
         return routeJpaRepository.save(route);
+    }
+
+    @Override
+    public void delete(Route route) {
+        routeJpaRepository.delete(route);
     }
 }

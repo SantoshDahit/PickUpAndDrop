@@ -15,4 +15,19 @@ public class PriceTierRepositoryImpl implements PriceTierRepository {
     public List<PriceTier> findAllOrdered() {
         return priceTierJpaRepository.findAllByOrderByGroupSizeAsc();
     }
+
+    @Override
+    public List<PriceTier> findAllByRouteIdOrdered(String routeId) {
+        return priceTierJpaRepository.findAllByRouteIdOrderByGroupSizeAsc(routeId);
+    }
+
+    @Override
+    public List<PriceTier> saveAll(List<PriceTier> tiers) {
+        return priceTierJpaRepository.saveAll(tiers);
+    }
+
+    @Override
+    public void deleteAllByRouteId(String routeId) {
+        priceTierJpaRepository.deleteAllByRouteId(routeId);
+    }
 }

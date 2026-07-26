@@ -75,8 +75,9 @@ class DriverPortalControllerTest extends IntegrationTestBase {
 
         // a group with two members (dates within window) assigned to this driver
         var u1 = dataHelper.createUser();
-        var b1 = dataHelper.createGroupBooking(u1, LocalDate.now().plusDays(21), 1);
-        dataHelper.createGroupBooking(dataHelper.createUser(), LocalDate.now().plusDays(23), 2);
+        LocalDate day = dataHelper.groupableDate(21);
+        var b1 = dataHelper.createGroupBooking(u1, day, 1);
+        dataHelper.createGroupBooking(dataHelper.createUser(), day.plusDays(2), 2);
         mockMvc.perform(put("/v1/admin/groups/" + b1.getGroupId() + "/driver")
                         .header("Authorization", admin)
                         .contentType(MediaType.APPLICATION_JSON)

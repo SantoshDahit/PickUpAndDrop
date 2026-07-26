@@ -88,14 +88,20 @@ public enum ErrorCode {
             "This ride can't be joined.",
             "GRP_BR_001"),
     GROUP_DATE_OUT_OF_WINDOW(HttpStatus.BAD_REQUEST,
-            "Your landing day is too far from this ride's dates.",
+            "Your landing day falls outside this group's landing week.",
             "GRP_BR_002"),
     GROUP_SEATS_FULL(HttpStatus.BAD_REQUEST,
             "This ride doesn't have enough free seats.",
             "GRP_BR_003"),
     GROUP_HAS_MEMBERS(HttpStatus.BAD_REQUEST,
             "This ride still has members — handle them first.",
-            "GRP_BR_004");
+            "GRP_BR_004"),
+    ROUTE_TIERS_INVALID(HttpStatus.BAD_REQUEST,
+            "Each group size may appear only once in the fare ladder.",
+            "RTE_BR_001"),
+    ROUTE_IN_USE(HttpStatus.BAD_REQUEST,
+            "This route has bookings or rides — deactivate it instead of deleting.",
+            "RTE_BR_002");
 
     private final HttpStatus httpStatus;
     private final String message;
