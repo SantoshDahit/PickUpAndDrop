@@ -1,11 +1,9 @@
 # Add this block to the server's Caddyfile (Caddy already owns 80/443 and
 # handles TLS automatically — no certbot needed).
 #
-# Replace <IP> with the server's public IP; sslip.io resolves it, so the API
-# gets a real certificate without buying a domain during the testing phase.
-# Swap in api.getpickupdrop.com when the domain is live — Caddy re-issues.
-#
-# The port below is the Blue/Green upstream; the deploy workflow rewrites it.
+# The upstream is the API *container name* on the shared docker network:
+# inside the caddy container 127.0.0.1 is caddy itself, not the host. The
+# deploy workflow rewrites this line on every Blue-Green switch.
 api.217.15.165.238.sslip.io {
-	reverse_proxy 127.0.0.1:18080
+	reverse_proxy pickupdrop-api-dev-BLUE:8080
 }

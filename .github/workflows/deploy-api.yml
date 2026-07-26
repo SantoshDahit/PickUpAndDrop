@@ -162,6 +162,15 @@ jobs:
           fi
           echo "db credentials OK"
 
+          # Caddy proxies by container name over the shared network (inside the
+          # caddy container, 127.0.0.1 is caddy itself — not the host). Make sure
+          # it is attached; this is additive and does not restart caddy.
+          if ! docker inspect caddy --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' \
+               | tr ' ' '\n' | grep -qx "$DOCKER_NETWORK"; then
+            echo "attaching caddy to ${DOCKER_NETWORK}"
+            docker network connect "$DOCKER_NETWORK" caddy
+          fi
+
           docker pull "$IMAGE_TAG"
 
           BLUE_CONTAINER="${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}-BLUE"
@@ -236,27 +245,38 @@ jobs:
           done
 
           # Phase 5: Caddy traffic flip (validated, reverted on failure).
-          # Caddy owns 80/443 and its own TLS — the flip is a config reload.
-          # awk (not sed) so only our site block changes; verified on Linux.
+          # Upstream is the *container name* on the shared network; the published
+          # 127.0.0.1 port stays for host-side health checks only.
+          UPSTREAM="${NEW_CONTAINER}:${CONTAINER_PORT}"
           cp "$CADDYFILE" "${CADDYFILE}.bak"
-          awk -v dom="$DOMAIN" -v port="$NEW_PORT" '
+          awk -v dom="$DOMAIN" -v up="$UPSTREAM" '
             index($0, dom" {") == 1 { inblock = 1 }
-            inblock && /reverse_proxy 127\.0\.0\.1:[0-9]+/ { sub(/127\.0\.0\.1:[0-9]+/, "127.0.0.1:" port) }
+            inblock && /reverse_proxy[ \t]+[A-Za-z0-9_.-]+:[0-9]+/ {
+              sub(/reverse_proxy[ \t]+[A-Za-z0-9_.-]+:[0-9]+/, "reverse_proxy " up)
+            }
             /^}/ { inblock = 0 }
             { print }
           ' "${CADDYFILE}.bak" > "$CADDYFILE"
-          grep -A1 "^${DOMAIN} {" "$CADDYFILE" | grep -q ":${NEW_PORT}" \
+          grep -A2 "^${DOMAIN} {" "$CADDYFILE" | grep -q "$UPSTREAM" \
             || { echo "::error::caddyfile flip did not apply"; cp "${CADDYFILE}.bak" "$CADDYFILE"; \
                  docker rm -f "$NEW_CONTAINER" || true; exit 1; }
           if docker exec caddy caddy validate --config /etc/caddy/Caddyfile 2>/dev/null \
              && docker exec caddy caddy reload --config /etc/caddy/Caddyfile; then
-            echo "caddy now proxying :${NEW_PORT}"
+            echo "caddy now proxying ${UPSTREAM}"
           else
             cp "${CADDYFILE}.bak" "$CADDYFILE"
             docker exec caddy caddy reload --config /etc/caddy/Caddyfile || true
             docker rm -f "$NEW_CONTAINER" || true
             exit 1
           fi
+
+          # confirm through caddy itself before declaring success
+          for i in $(seq 1 10); do
+            INNER=$(docker exec caddy wget -q -O- --timeout=5 "http://${UPSTREAM}/actuator/health/liveness" 2>/dev/null || true)
+            case "$INNER" in *UP*) echo "caddy → container reachable"; break ;; esac
+            [ "$i" = "10" ] && echo "::warning::caddy could not reach ${UPSTREAM} yet"
+            sleep 3
+          done
 
           # Phase 6: retire the old colour + cleanup
           sleep 10
