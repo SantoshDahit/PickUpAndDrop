@@ -31,7 +31,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      tag: ${{ steps.image.outputs.tag }}
+      # Only the non-secret tag suffix crosses jobs: GitHub redacts job outputs
+      # that contain secret values, which would arrive empty in `deploy`.
+      tag_date: ${{ steps.image.outputs.tag_date }}
     steps:
       - uses: actions/checkout@v4
 
@@ -56,10 +58,12 @@ jobs:
       - name: Build & push image
         id: image
         run: |
-          TAG="${{ secrets.DOCKERHUB_USERNAME }}/${PROJECT_NAME}-${APPLICATION_NAME}:${PROFILE}.$(date +%Y.%m.%d)"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          TAG_DATE="${PROFILE}.$(date +%Y.%m.%d)"
+          echo "tag_date=$TAG_DATE" >> "$GITHUB_OUTPUT"
+          TAG="${{ secrets.DOCKERHUB_USERNAME }}/${PROJECT_NAME}-${APPLICATION_NAME}:${TAG_DATE}"
           docker build -t "$TAG" springboot
           docker push "$TAG"
+          echo "pushed ${PROJECT_NAME}-${APPLICATION_NAME}:${TAG_DATE}"
 
   # --------------------------------------------------------------- deploy
   deploy:
@@ -92,8 +96,14 @@ jobs:
       # Caddy flip → retire old. Secrets are injected as container env vars.
       - name: Blue-Green deploy
         run: |
+          # Rebuild the tag here: the username is a secret (masked in logs) and
+          # the date came through the job output.
+          TAG_DATE='${{ needs.build.outputs.tag_date }}'
+          [ -n "$TAG_DATE" ] || { echo "::error::empty tag from the build job"; exit 1; }
+          IMAGE_TAG="${{ secrets.DOCKERHUB_USERNAME }}/${PROJECT_NAME}-${APPLICATION_NAME}:${TAG_DATE}"
+          echo "deploying image tag suffix: ${TAG_DATE}"
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "IMAGE_TAG='${{ needs.build.outputs.tag }}' PROFILE='$PROFILE' \
+            "IMAGE_TAG='$IMAGE_TAG' PROFILE='$PROFILE' \
              DB_URL='${{ secrets.DB_URL }}' DB_USERNAME='${{ secrets.DB_USERNAME }}' \
              DB_PASSWORD='${{ secrets.DB_PASSWORD }}' JWT_SECRET='${{ secrets.JWT_SECRET }}' \
              CORS_ALLOWED_ORIGINS='${{ vars.CORS_ALLOWED_ORIGINS }}' \
