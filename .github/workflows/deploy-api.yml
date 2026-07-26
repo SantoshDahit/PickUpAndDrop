@@ -102,15 +102,45 @@ jobs:
           [ -n "$TAG_DATE" ] || { echo "::error::empty tag from the build job"; exit 1; }
           IMAGE_TAG="${{ secrets.DOCKERHUB_USERNAME }}/${PROJECT_NAME}-${APPLICATION_NAME}:${TAG_DATE}"
           echo "deploying image tag suffix: ${TAG_DATE}"
+          # Secrets travel base64-encoded: quoting/newlines in a pasted secret
+          # can silently corrupt the value on the way through ssh.
+          b64() { printf '%s' "$1" | tr -d '\r\n' | base64 | tr -d '\n'; }
+          DB_URL_B64=$(b64 '${{ secrets.DB_URL }}')
+          DB_USERNAME_B64=$(b64 '${{ secrets.DB_USERNAME }}')
+          DB_PASSWORD_B64=$(b64 '${{ secrets.DB_PASSWORD }}')
+          JWT_SECRET_B64=$(b64 '${{ secrets.JWT_SECRET }}')
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "IMAGE_TAG='$IMAGE_TAG' PROFILE='$PROFILE' \
-             DB_URL='${{ secrets.DB_URL }}' DB_USERNAME='${{ secrets.DB_USERNAME }}' \
-             DB_PASSWORD='${{ secrets.DB_PASSWORD }}' JWT_SECRET='${{ secrets.JWT_SECRET }}' \
+             DB_URL_B64='$DB_URL_B64' DB_USERNAME_B64='$DB_USERNAME_B64' \
+             DB_PASSWORD_B64='$DB_PASSWORD_B64' JWT_SECRET_B64='$JWT_SECRET_B64' \
              CORS_ALLOWED_ORIGINS='${{ vars.CORS_ALLOWED_ORIGINS }}' \
              PROJECT_NAME='$PROJECT_NAME' APPLICATION_NAME='$APPLICATION_NAME' \
              CONTAINER_PORT='$CONTAINER_PORT' BLUE_PORT='$BLUE_PORT_HOST' GREEN_PORT='$GREEN_PORT_HOST' \
              DOMAIN='$DOMAIN' DOCKER_NETWORK='$DOCKER_NETWORK' CADDYFILE='$CADDYFILE' bash -s" <<'REMOTE'
           set -euo pipefail
+          DB_URL=$(printf '%s' "$DB_URL_B64" | base64 -d)
+          DB_USERNAME=$(printf '%s' "$DB_USERNAME_B64" | base64 -d)
+          DB_PASSWORD=$(printf '%s' "$DB_PASSWORD_B64" | base64 -d)
+          JWT_SECRET=$(printf '%s' "$JWT_SECRET_B64" | base64 -d)
+
+          # Phase 0: prove the DB credentials work before deploying anything.
+          # Shapes only — never the values.
+          DB_HOST=$(printf '%s' "$DB_URL" | sed -E 's#^jdbc:mysql://([^:/]+).*#\1#')
+          DB_PORT=$(printf '%s' "$DB_URL" | sed -E 's#^jdbc:mysql://[^:]+:([0-9]+).*#\1#')
+          DB_NAME=$(printf '%s' "$DB_URL" | sed -E 's#^jdbc:mysql://[^/]+/([^?]+).*#\1#')
+          echo "db check: host=${DB_HOST} port=${DB_PORT} db=${DB_NAME} user_len=${#DB_USERNAME} pass_len=${#DB_PASSWORD}"
+          if ! docker run --rm --network "$DOCKER_NETWORK" mysql:8.0 \
+                 mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USERNAME" -p"$DB_PASSWORD" \
+                 -e 'SELECT 1' "$DB_NAME" >/dev/null 2>/tmp/dbcheck.err; then
+            echo "::error::MySQL rejected these credentials — fix the user/password, not the pipeline"
+            sed 's/'"$DB_PASSWORD"'/***/g' /tmp/dbcheck.err | tail -5
+            echo "run on the server as MySQL root:"
+            echo "  CREATE USER IF NOT EXISTS '${DB_USERNAME}'@'%' IDENTIFIED WITH mysql_native_password BY '<the DB_PASSWORD secret>';"
+            echo "  GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USERNAME}'@'%'; FLUSH PRIVILEGES;"
+            exit 1
+          fi
+          echo "db credentials OK"
+
           docker pull "$IMAGE_TAG"
 
           BLUE_CONTAINER="${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}-BLUE"
