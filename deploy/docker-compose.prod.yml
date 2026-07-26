@@ -1,0 +1,51 @@
+# Production stack on the VPS. Secrets come from /opt/pickupdrop/.env (never committed).
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: pickupdrop-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: pickupdrop
+      MYSQL_USER: pickupdrop
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    image: pickupdrop-api:latest
+    container_name: pickupdrop-api
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/pickupdrop?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      DB_USERNAME: pickupdrop
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      CORS_ALLOWED_ORIGINS: https://admin.getpickupdrop.com
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  web:
+    image: pickupdrop-web:latest
+    container_name: pickupdrop-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_URL: http://api:8080
+      NEXT_PUBLIC_ADMIN_URL: https://admin.getpickupdrop.com
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  mysql-data:

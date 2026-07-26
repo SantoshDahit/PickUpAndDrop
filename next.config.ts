@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@libsql/client", "libsql"],
+  output: "standalone", // self-contained server for the Docker image
 };
 
 export default nextConfig;
