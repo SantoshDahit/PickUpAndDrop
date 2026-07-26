@@ -118,10 +118,21 @@ jobs:
              CONTAINER_PORT='$CONTAINER_PORT' BLUE_PORT='$BLUE_PORT_HOST' GREEN_PORT='$GREEN_PORT_HOST' \
              DOMAIN='$DOMAIN' DOCKER_NETWORK='$DOCKER_NETWORK' CADDYFILE='$CADDYFILE' bash -s" <<'REMOTE'
           set -euo pipefail
-          DB_URL=$(printf '%s' "$DB_URL_B64" | base64 -d)
-          DB_USERNAME=$(printf '%s' "$DB_USERNAME_B64" | base64 -d)
-          DB_PASSWORD=$(printf '%s' "$DB_PASSWORD_B64" | base64 -d)
-          JWT_SECRET=$(printf '%s' "$JWT_SECRET_B64" | base64 -d)
+          # Trim surrounding whitespace: pasted secrets often carry a stray
+          # leading/trailing space, which silently corrupts URLs and passwords.
+          trim() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          DB_URL=$(trim "$(printf '%s' "$DB_URL_B64" | base64 -d)")
+          DB_USERNAME=$(trim "$(printf '%s' "$DB_USERNAME_B64" | base64 -d)")
+          DB_PASSWORD_RAW=$(printf '%s' "$DB_PASSWORD_B64" | base64 -d)
+          DB_PASSWORD=$(trim "$DB_PASSWORD_RAW")
+          [ "${#DB_PASSWORD}" = "${#DB_PASSWORD_RAW}" ] \
+            || echo "::warning::DB_PASSWORD had surrounding whitespace — trimmed"
+          JWT_SECRET=$(trim "$(printf '%s' "$JWT_SECRET_B64" | base64 -d)")
+
+          case "$DB_URL" in
+            jdbc:mysql://*) ;;
+            *) echo "::error::DB_URL must start with jdbc:mysql:// (received ${#DB_URL} chars)"; exit 1 ;;
+          esac
 
           # Phase 0: prove the DB credentials work before deploying anything.
           # Shapes only — never the values.
