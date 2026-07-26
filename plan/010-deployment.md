@@ -2,11 +2,32 @@
 
 **Status:** Draft — **testing phase first (owner, 2026-07-26): Contabo VPS + Vercel**, domain purchase deferred
 
-## 0. Testing phase — Contabo VPS + Vercel
+## 0-a. Server reality check (2026-07-26) — reuse existing shared infra
 
-- **Contabo VPS**: MySQL + API only (`docker compose up -d mysql api`). Public hostname without
-  buying a domain: **`api.<IP>.sslip.io`** (sslip.io resolves any embedded IP), TLS via certbot —
-  required because the admin SPA calls the API from the browser (HTTPS page → HTTPS API).
+The Contabo box already runs the owner's other project and shares infrastructure.
+The deployment adapts rather than duplicating:
+
+| Existing | Used for Pickup&Drop |
+|---|---|
+| `shared-mysql` (MySQL 8, holds `restaurant_booking_system`) | Add a `pickupdrop` database + user — **no second MySQL container** |
+| `caddy` (owns 80/443, automatic TLS) | Reverse proxy + certificates — **Nginx and certbot dropped**; Blue-Green flip is a Caddyfile edit + `caddy reload` |
+| Docker Hub `santosh390`, tags `…-api:dev.YYYY.MM.DD` | Same convention-18 tag scheme, image `santosh390/pickupdrop-api` |
+
+Host ports for Blue/Green are **18080/18081** so they cannot collide with the
+other project's containers. MySQL root stays with the owner: the setup script
+prints the `CREATE DATABASE/USER/GRANT` SQL to run manually rather than
+demanding root credentials.
+
+Two workflow inputs come from GitHub **Variables** (not secrets — they are not
+sensitive): `DOCKER_NETWORK` (the network `shared-mysql` is on) and `CADDYFILE`
+(host path of the Caddyfile).
+
+## 0-b. Testing phase — Contabo VPS + Vercel
+
+- **Contabo VPS**: API container only (Blue-Green via `docker run`, convention 18), joined to the
+  shared network so it reaches `shared-mysql`. Public hostname without buying a domain:
+  **`api.<IP>.sslip.io`** (sslip.io resolves any embedded IP), TLS issued automatically by the
+  existing Caddy — required because the admin SPA calls the API from the browser (HTTPS→HTTPS).
 - **Vercel** (free tier): two projects from the same repo —
   root `/` = Next.js customer app (env `API_URL=https://api.<IP>.sslip.io`, server-side calls);
   root `admin-web/` = Vite admin console (env `VITE_API_URL=...`, `vercel.json` SPA rewrite added).

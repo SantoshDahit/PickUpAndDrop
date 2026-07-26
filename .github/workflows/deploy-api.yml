@@ -21,10 +21,12 @@ env:
   PROJECT_NAME: pickupdrop
   APPLICATION_NAME: api
   CONTAINER_PORT: 8080
-  BLUE_PORT: 8080
-  GREEN_PORT: 8081
+  BLUE_PORT_HOST: 18080          # host ports; avoid clashing with other projects
+  GREEN_PORT_HOST: 18081
   DOMAIN: api.217.15.165.238.sslip.io
-  NGINX_CONF: /etc/nginx/sites-available/api.217.15.165.238.sslip.io.conf
+  # Existing shared infrastructure on the box
+  DOCKER_NETWORK: ${{ vars.DOCKER_NETWORK }}
+  CADDYFILE: ${{ vars.CADDYFILE }}
 
 jobs:
   deploy:
@@ -70,8 +72,8 @@ jobs:
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "IMAGE_TAG='${{ steps.image.outputs.tag }}' PROFILE='$PROFILE' \
              PROJECT_NAME='$PROJECT_NAME' APPLICATION_NAME='$APPLICATION_NAME' \
-             CONTAINER_PORT='$CONTAINER_PORT' BLUE_PORT='$BLUE_PORT' GREEN_PORT='$GREEN_PORT' \
-             DOMAIN='$DOMAIN' NGINX_CONF='$NGINX_CONF' bash -s" <<'REMOTE'
+             CONTAINER_PORT='$CONTAINER_PORT' BLUE_PORT='$BLUE_PORT_HOST' GREEN_PORT='$GREEN_PORT_HOST' \
+             DOMAIN='$DOMAIN' DOCKER_NETWORK='$DOCKER_NETWORK' CADDYFILE='$CADDYFILE' bash -s" <<'REMOTE'
           set -euo pipefail
           sudo docker pull "$IMAGE_TAG"
 
@@ -88,9 +90,6 @@ jobs:
           else
             NEW_COLOR="BLUE"; NEW_PORT=$BLUE_PORT; NEW_CONTAINER=$BLUE_CONTAINER
             OLD_PORT=$GREEN_PORT; OLD_CONTAINER=$GREEN_CONTAINER
-            # legacy single container (compose 'api' service) holds BLUE_PORT — retire it
-            sudo docker stop pickupdrop-api 2>/dev/null || true
-            sudo docker rm pickupdrop-api 2>/dev/null || true
           fi
           echo "deploying to ${NEW_COLOR} (:${NEW_PORT})"
 
@@ -98,7 +97,7 @@ jobs:
           sudo docker stop "$NEW_CONTAINER" 2>/dev/null || true
           sudo docker rm "$NEW_CONTAINER" 2>/dev/null || true
           sudo docker run -d --name "$NEW_CONTAINER" \
-            --network pickupdrop-net \
+            --network "$DOCKER_NETWORK" \
             -p 127.0.0.1:${NEW_PORT}:${CONTAINER_PORT} \
             --env-file /opt/pickupdrop/.env \
             -e "SPRING_PROFILES_ACTIVE=${PROFILE}" \
@@ -124,16 +123,18 @@ jobs:
             sleep $RETRY_INTERVAL
           done
 
-          # Phase 5: nginx traffic flip (syntax-checked, reverted on failure)
+          # Phase 5: Caddy traffic flip (validated, reverted on failure).
+          # Caddy owns 80/443 and its own TLS — the flip is a config reload.
+          sudo cp "$CADDYFILE" "${CADDYFILE}.bak"
           sudo sed -i \
-            '/server_name '"$DOMAIN"'/,/^\}/{s/proxy_pass http:\/\/127\.0\.0\.1:[0-9]*/proxy_pass http:\/\/127.0.0.1:'"$NEW_PORT"'/}' \
-            "$NGINX_CONF"
-          if sudo nginx -t; then
-            sudo nginx -s reload
+            '/^'"${DOMAIN//./\.}"' {/,/^}/{s/reverse_proxy 127\.0\.0\.1:[0-9]*/reverse_proxy 127.0.0.1:'"$NEW_PORT"'/}' \
+            "$CADDYFILE"
+          if docker exec caddy caddy validate --config /etc/caddy/Caddyfile 2>/dev/null \
+             && docker exec caddy caddy reload --config /etc/caddy/Caddyfile; then
+            echo "caddy now proxying :${NEW_PORT}"
           else
-            sudo sed -i \
-              '/server_name '"$DOMAIN"'/,/^\}/{s/proxy_pass http:\/\/127\.0\.0\.1:[0-9]*/proxy_pass http:\/\/127.0.0.1:'"$OLD_PORT"'/}' \
-              "$NGINX_CONF"
+            sudo cp "${CADDYFILE}.bak" "$CADDYFILE"
+            docker exec caddy caddy reload --config /etc/caddy/Caddyfile || true
             sudo docker stop "$NEW_CONTAINER" || true
             sudo docker rm "$NEW_CONTAINER" || true
             exit 1
