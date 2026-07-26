@@ -6,6 +6,6 @@
 # Swap in api.getpickupdrop.com when the domain is live — Caddy re-issues.
 #
 # The port below is the Blue/Green upstream; the deploy workflow rewrites it.
-api.<IP>.sslip.io {
+api.217.15.165.238.sslip.io {
 	reverse_proxy 127.0.0.1:18080
 }

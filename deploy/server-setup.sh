@@ -3,7 +3,9 @@
 # `shared-mysql` (MySQL 8) and `caddy` (80/443 + auto TLS).
 # Idempotent. Run as the deploy user:
 #
-#   ./server-setup.sh <PUBLIC_IP> <DOCKER_NETWORK> <CADDYFILE_PATH>
+#   ./server-setup.sh 217.15.165.238 restaurant-network /home/deploy/Caddyfile
+#
+# No sudo needed: the deploy user is in the docker group and owns the Caddyfile.
 #
 # It does NOT create a database — run the SQL printed at the end in
 # shared-mysql (needs the MySQL root password, which stays with the owner).
@@ -12,13 +14,12 @@ set -euo pipefail
 IP="${1:?usage: ./server-setup.sh <PUBLIC_IP> <DOCKER_NETWORK> <CADDYFILE_PATH>}"
 NET="${2:?docker network that shared-mysql is on}"
 CADDYFILE="${3:?path to the Caddyfile on the host}"
-APP_DIR=/opt/pickupdrop
+APP_DIR="$HOME/pickupdrop"
 API_HOST="api.${IP}.sslip.io"
 BLUE_PORT=18080
 
 echo "== [1/4] app dir + secrets =="
-sudo mkdir -p "$APP_DIR"
-sudo chown "$USER" "$APP_DIR"
+mkdir -p "$APP_DIR"
 test -f "$APP_DIR/.env" || { echo "put your filled .env at $APP_DIR/.env first (see deploy/.env.example)"; exit 1; }
 grep -q CHANGE_ME "$APP_DIR/.env" && { echo "fill in the CHANGE_ME values in $APP_DIR/.env"; exit 1; }
 chmod 600 "$APP_DIR/.env"
@@ -30,7 +31,7 @@ docker ps --format '{{.Names}}' | grep -q '^caddy$' || { echo "caddy not running
 
 echo "== [3/4] Caddy site for ${API_HOST} =="
 if ! grep -q "$API_HOST" "$CADDYFILE"; then
-  printf '\n%s {\n\treverse_proxy 127.0.0.1:%s\n}\n' "$API_HOST" "$BLUE_PORT" | sudo tee -a "$CADDYFILE" >/dev/null
+  printf '\n%s {\n\treverse_proxy 127.0.0.1:%s\n}\n' "$API_HOST" "$BLUE_PORT" >> "$CADDYFILE"
   docker exec caddy caddy reload --config /etc/caddy/Caddyfile
   echo "added + reloaded"
 else

@@ -25,8 +25,8 @@ env:
   GREEN_PORT_HOST: 18081
   DOMAIN: api.217.15.165.238.sslip.io
   # Existing shared infrastructure on the box
-  DOCKER_NETWORK: ${{ vars.DOCKER_NETWORK }}
-  CADDYFILE: ${{ vars.CADDYFILE }}
+  DOCKER_NETWORK: restaurant-network      # shared-mysql lives here
+  CADDYFILE: /home/deploy/Caddyfile      # mounted into the caddy container
 
 jobs:
   deploy:
@@ -75,16 +75,16 @@ jobs:
              CONTAINER_PORT='$CONTAINER_PORT' BLUE_PORT='$BLUE_PORT_HOST' GREEN_PORT='$GREEN_PORT_HOST' \
              DOMAIN='$DOMAIN' DOCKER_NETWORK='$DOCKER_NETWORK' CADDYFILE='$CADDYFILE' bash -s" <<'REMOTE'
           set -euo pipefail
-          sudo docker pull "$IMAGE_TAG"
+          docker pull "$IMAGE_TAG"
 
           BLUE_CONTAINER="${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}-BLUE"
           GREEN_CONTAINER="${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}-GREEN"
 
           # Phase 2: detect the active colour
-          if sudo docker ps --format '{{.Names}}' | grep -q "^${BLUE_CONTAINER}$"; then
+          if docker ps --format '{{.Names}}' | grep -q "^${BLUE_CONTAINER}$"; then
             NEW_COLOR="GREEN"; NEW_PORT=$GREEN_PORT; NEW_CONTAINER=$GREEN_CONTAINER
             OLD_PORT=$BLUE_PORT; OLD_CONTAINER=$BLUE_CONTAINER
-          elif sudo docker ps --format '{{.Names}}' | grep -q "^${GREEN_CONTAINER}$"; then
+          elif docker ps --format '{{.Names}}' | grep -q "^${GREEN_CONTAINER}$"; then
             NEW_COLOR="BLUE"; NEW_PORT=$BLUE_PORT; NEW_CONTAINER=$BLUE_CONTAINER
             OLD_PORT=$GREEN_PORT; OLD_CONTAINER=$GREEN_CONTAINER
           else
@@ -94,12 +94,12 @@ jobs:
           echo "deploying to ${NEW_COLOR} (:${NEW_PORT})"
 
           # Phase 3: start the new colour (old one keeps serving)
-          sudo docker stop "$NEW_CONTAINER" 2>/dev/null || true
-          sudo docker rm "$NEW_CONTAINER" 2>/dev/null || true
-          sudo docker run -d --name "$NEW_CONTAINER" \
+          docker stop "$NEW_CONTAINER" 2>/dev/null || true
+          docker rm "$NEW_CONTAINER" 2>/dev/null || true
+          docker run -d --name "$NEW_CONTAINER" \
             --network "$DOCKER_NETWORK" \
             -p 127.0.0.1:${NEW_PORT}:${CONTAINER_PORT} \
-            --env-file /opt/pickupdrop/.env \
+            --env-file /home/deploy/pickupdrop/.env \
             -e "SPRING_PROFILES_ACTIVE=${PROFILE}" \
             --restart always \
             "$IMAGE_TAG"
@@ -108,16 +108,16 @@ jobs:
           HEALTH_URL="http://localhost:${NEW_PORT}/actuator/health/liveness"
           MAX_RETRIES=30; RETRY_INTERVAL=10
           for i in $(seq 1 $MAX_RETRIES); do
-            if ! sudo docker ps --format '{{.Names}}' | grep -q "^${NEW_CONTAINER}$"; then
-              echo "container died"; sudo docker logs "$NEW_CONTAINER" | tail -40 || true; exit 1
+            if ! docker ps --format '{{.Names}}' | grep -q "^${NEW_CONTAINER}$"; then
+              echo "container died"; docker logs "$NEW_CONTAINER" | tail -40 || true; exit 1
             fi
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
             [ "$STATUS" = "200" ] && { echo "health check passed"; break; }
             if [ "$i" = "$MAX_RETRIES" ]; then
               echo "health check failed — rolling back"
-              sudo docker logs "$NEW_CONTAINER" | tail -40 || true
-              sudo docker stop "$NEW_CONTAINER" || true
-              sudo docker rm "$NEW_CONTAINER" || true
+              docker logs "$NEW_CONTAINER" | tail -40 || true
+              docker stop "$NEW_CONTAINER" || true
+              docker rm "$NEW_CONTAINER" || true
               exit 1
             fi
             sleep $RETRY_INTERVAL
@@ -125,27 +125,34 @@ jobs:
 
           # Phase 5: Caddy traffic flip (validated, reverted on failure).
           # Caddy owns 80/443 and its own TLS — the flip is a config reload.
-          sudo cp "$CADDYFILE" "${CADDYFILE}.bak"
-          sudo sed -i \
-            '/^'"${DOMAIN//./\.}"' {/,/^}/{s/reverse_proxy 127\.0\.0\.1:[0-9]*/reverse_proxy 127.0.0.1:'"$NEW_PORT"'/}' \
-            "$CADDYFILE"
+          # awk (not sed) so only our site block changes; verified on Linux.
+          cp "$CADDYFILE" "${CADDYFILE}.bak"
+          awk -v dom="$DOMAIN" -v port="$NEW_PORT" '
+            index($0, dom" {") == 1 { inblock = 1 }
+            inblock && /reverse_proxy 127\.0\.0\.1:[0-9]+/ { sub(/127\.0\.0\.1:[0-9]+/, "127.0.0.1:" port) }
+            /^}/ { inblock = 0 }
+            { print }
+          ' "${CADDYFILE}.bak" > "$CADDYFILE"
+          grep -A1 "^${DOMAIN} {" "$CADDYFILE" | grep -q ":${NEW_PORT}" \
+            || { echo "caddyfile flip did not apply"; cp "${CADDYFILE}.bak" "$CADDYFILE"; \
+                 docker stop "$NEW_CONTAINER" || true; docker rm "$NEW_CONTAINER" || true; exit 1; }
           if docker exec caddy caddy validate --config /etc/caddy/Caddyfile 2>/dev/null \
              && docker exec caddy caddy reload --config /etc/caddy/Caddyfile; then
             echo "caddy now proxying :${NEW_PORT}"
           else
-            sudo cp "${CADDYFILE}.bak" "$CADDYFILE"
+            cp "${CADDYFILE}.bak" "$CADDYFILE"
             docker exec caddy caddy reload --config /etc/caddy/Caddyfile || true
-            sudo docker stop "$NEW_CONTAINER" || true
-            sudo docker rm "$NEW_CONTAINER" || true
+            docker stop "$NEW_CONTAINER" || true
+            docker rm "$NEW_CONTAINER" || true
             exit 1
           fi
 
           # Phase 6: retire the old colour + cleanup
           sleep 10
-          sudo docker stop "$OLD_CONTAINER" 2>/dev/null || true
-          sudo docker rm "$OLD_CONTAINER" 2>/dev/null || true
-          sudo docker stop "${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}" 2>/dev/null || true
-          sudo docker rm "${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}" 2>/dev/null || true
-          sudo docker images -f "dangling=true" -q | xargs -r sudo docker rmi -f || true
+          docker stop "$OLD_CONTAINER" 2>/dev/null || true
+          docker rm "$OLD_CONTAINER" 2>/dev/null || true
+          docker stop "${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}" 2>/dev/null || true
+          docker rm "${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}" 2>/dev/null || true
+          docker images -f "dangling=true" -q | xargs -r docker rmi -f || true
           echo "switched to ${NEW_COLOR}"
           REMOTE
