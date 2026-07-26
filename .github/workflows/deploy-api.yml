@@ -49,11 +49,18 @@ jobs:
         working-directory: springboot
         run: ./gradlew clean build -x test
 
+      # Registry calls are retried: Docker Hub intermittently times out from
+      # GitHub runners, which should not fail an otherwise good deploy.
       - name: Docker Hub login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if printf '%s' '${{ secrets.DOCKERHUB_TOKEN }}' \
+                 | docker login -u '${{ secrets.DOCKERHUB_USERNAME }}' --password-stdin; then
+              echo "logged in (attempt ${attempt})"; exit 0
+            fi
+            echo "login attempt ${attempt} failed — retrying in 20s"; sleep 20
+          done
+          echo "::error::docker hub login failed after 5 attempts"; exit 1
 
       - name: Build & push image
         id: image
@@ -62,8 +69,13 @@ jobs:
           echo "tag_date=$TAG_DATE" >> "$GITHUB_OUTPUT"
           TAG="${{ secrets.DOCKERHUB_USERNAME }}/${PROJECT_NAME}-${APPLICATION_NAME}:${TAG_DATE}"
           docker build -t "$TAG" springboot
-          docker push "$TAG"
-          echo "pushed ${PROJECT_NAME}-${APPLICATION_NAME}:${TAG_DATE}"
+          for attempt in 1 2 3 4 5; do
+            if docker push "$TAG"; then
+              echo "pushed ${PROJECT_NAME}-${APPLICATION_NAME}:${TAG_DATE} (attempt ${attempt})"; exit 0
+            fi
+            echo "push attempt ${attempt} failed — retrying in 20s"; sleep 20
+          done
+          echo "::error::docker push failed after 5 attempts"; exit 1
 
   # --------------------------------------------------------------- deploy
   deploy:
@@ -171,7 +183,11 @@ jobs:
             docker network connect "$DOCKER_NETWORK" caddy
           fi
 
-          docker pull "$IMAGE_TAG"
+          for attempt in 1 2 3 4 5; do
+            docker pull "$IMAGE_TAG" && break
+            echo "pull attempt ${attempt} failed — retrying in 20s"; sleep 20
+            [ "$attempt" = "5" ] && { echo "::error::docker pull failed"; exit 1; }
+          done
 
           BLUE_CONTAINER="${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}-BLUE"
           GREEN_CONTAINER="${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}-GREEN"
