@@ -1,49 +1,9 @@
 spring:
   application:
-    name: pickupdrop
-
-  datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3307/landgreet?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
-    username: ${DB_USERNAME:landgreet}
-    password: ${DB_PASSWORD:landgreet}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        jdbc:
-          time_zone: Asia/Seoul
-    open-in-view: false
-
-  jackson:
-    time-zone: Asia/Seoul
-    date-format: yyyy-MM-dd HH:mm:ss
-
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    baseline-version: 0
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health
-  endpoint:
-    health:
-      probes:
-        enabled: true
-
-server:
-  port: 8080
-
-jwt:
-  token:
-    secret: ${JWT_SECRET:pickupdrop-local-dev-secret-key-change-in-production-00}
-
-app:
-  seed:
-    admin-email: admin@pickupdrop.com
-    admin-password: ${SEED_ADMIN_PASSWORD:admin123}
+    name: pickupdrop-backend
+  profiles:
+    default: loc
+    group:
+      loc: 'common,loc,actuator,flyway'
+      dev: 'common,dev,actuator,flyway'
+      pro: 'common,pro,actuator,flyway'
