@@ -71,6 +71,9 @@ jobs:
         run: |
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "IMAGE_TAG='${{ steps.image.outputs.tag }}' PROFILE='$PROFILE' \
+             DB_URL='${{ secrets.DB_URL }}' DB_USERNAME='${{ secrets.DB_USERNAME }}' \
+             DB_PASSWORD='${{ secrets.DB_PASSWORD }}' JWT_SECRET='${{ secrets.JWT_SECRET }}' \
+             CORS_ALLOWED_ORIGINS='${{ vars.CORS_ALLOWED_ORIGINS }}' \
              PROJECT_NAME='$PROJECT_NAME' APPLICATION_NAME='$APPLICATION_NAME' \
              CONTAINER_PORT='$CONTAINER_PORT' BLUE_PORT='$BLUE_PORT_HOST' GREEN_PORT='$GREEN_PORT_HOST' \
              DOMAIN='$DOMAIN' DOCKER_NETWORK='$DOCKER_NETWORK' CADDYFILE='$CADDYFILE' bash -s" <<'REMOTE'
@@ -93,14 +96,22 @@ jobs:
           fi
           echo "deploying to ${NEW_COLOR} (:${NEW_PORT})"
 
-          # Phase 3: start the new colour (old one keeps serving)
+          # Phase 3: start the new colour (old one keeps serving).
+          # Runtime secrets come from GitHub Actions secrets — nothing sensitive
+          # is stored on the server, and nothing is committed.
+          EXTRA_ENV=()
+          [ -n "${CORS_ALLOWED_ORIGINS:-}" ] && EXTRA_ENV+=(-e "CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}")
           docker stop "$NEW_CONTAINER" 2>/dev/null || true
           docker rm "$NEW_CONTAINER" 2>/dev/null || true
           docker run -d --name "$NEW_CONTAINER" \
             --network "$DOCKER_NETWORK" \
             -p 127.0.0.1:${NEW_PORT}:${CONTAINER_PORT} \
-            --env-file /home/deploy/pickupdrop/.env \
             -e "SPRING_PROFILES_ACTIVE=${PROFILE}" \
+            -e "DB_URL=${DB_URL}" \
+            -e "DB_USERNAME=${DB_USERNAME}" \
+            -e "DB_PASSWORD=${DB_PASSWORD}" \
+            -e "JWT_SECRET=${JWT_SECRET}" \
+            "${EXTRA_ENV[@]}" \
             --restart always \
             "$IMAGE_TAG"
 

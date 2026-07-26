@@ -18,9 +18,16 @@ other project's containers. MySQL root stays with the owner: the setup script
 prints the `CREATE DATABASE/USER/GRANT` SQL to run manually rather than
 demanding root credentials.
 
-Two workflow inputs come from GitHub **Variables** (not secrets — they are not
-sensitive): `DOCKER_NETWORK` (the network `shared-mysql` is on) and `CADDYFILE`
-(host path of the Caddyfile).
+Runtime secrets live in **GitHub Actions secrets** and are injected with
+`docker run -e` (convention 18's env-var model): `DB_URL`, `DB_USERNAME`,
+`DB_PASSWORD`, `JWT_SECRET`. Nothing sensitive is stored on the server and
+nothing is committed. `CORS_ALLOWED_ORIGINS` is a GitHub **Variable** (not
+sensitive; the admin console's Vercel URL) and is omitted until set.
+Network (`restaurant-network`), Caddyfile path (`/home/deploy/Caddyfile`) and
+the Blue/Green host ports (18080/18081) are pinned in the workflow env block.
+
+The pipeline runs **without sudo**: the deploy user is in the docker group and
+owns the Caddyfile.
 
 ## 0-b. Testing phase — Contabo VPS + Vercel
 
