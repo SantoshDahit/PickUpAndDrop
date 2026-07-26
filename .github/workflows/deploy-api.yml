@@ -1,0 +1,59 @@
+# API deploy — testing phase: build+test, ship the jar over SSH, restart the
+# container. Upgrade path: convention 18 full Blue-Green with Docker Hub +
+# nginx port flip once we're past testing.
+name: Deploy API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "springboot/**"
+      - "deploy/**"
+      - ".github/workflows/deploy-api.yml"
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Build & test (Testcontainers MySQL)
+        working-directory: springboot
+        run: ./gradlew build
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Ship jar + deploy files
+        run: |
+          rsync -az springboot/build/libs/pickupdrop-0.0.1-SNAPSHOT.jar \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/pickupdrop/src/springboot/build/libs/"
+          rsync -az springboot/Dockerfile deploy/ \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/pickupdrop/src/deploy-inbox/"
+
+      - name: Rebuild image & restart API
+        run: |
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" bash -s <<'REMOTE'
+          set -euo pipefail
+          SRC=/opt/pickupdrop/src
+          cp -f "$SRC/deploy-inbox/Dockerfile" "$SRC/springboot/Dockerfile" 2>/dev/null || true
+          cp -rf "$SRC/deploy-inbox/"*.yml "$SRC/deploy-inbox/nginx" "$SRC/deploy/" 2>/dev/null || true
+          sudo docker build -q -t pickupdrop-api "$SRC/springboot"
+          sudo docker compose -f "$SRC/deploy/docker-compose.prod.yml" \
+            --env-file /opt/pickupdrop/.env up -d mysql api
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:8080/v1/routes && exit 0
+            sleep 2
+          done
+          echo "API failed to come up"; sudo docker logs pickupdrop-api | tail -40; exit 1
+          REMOTE
