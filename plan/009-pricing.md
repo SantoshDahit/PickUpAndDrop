@@ -1,6 +1,29 @@
 # 009 — Realistic pricing: cost analysis and fare tables
 
-**Status:** Implemented (2026-07-26) — tiers live on all 15 routes; site displays verified; suite green
+**Status:** Implemented (2026-07-26) — **Revised same day (owner):** value-based single table, see §0
+**Displayed fares:** ₩150,000 solo · ₩140,000/person for 2+ (all routes)
+
+## 0. Revision — owner's pricing directive (2026-07-26)
+
+The cost analysis below stays as the **internal business reference**; customer pricing is
+decoupled from it. Whether a party rides bus, train, or hired car is an operational choice,
+not a price input. Owner's formula: **₩150,000 per person, minus ₩10,000 × n off the total
+from 2 people** — which resolves to a flat **₩140,000/person for any party of 2–6**:
+
+| Party | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| **₩/person** | 150,000 | 140,000 | 140,000 | 140,000 | 140,000 | 140,000 |
+| Total | 150,000 | 280,000 | 420,000 | 560,000 | 700,000 | 840,000 |
+
+Worked example (owner): 3 people → ₩420,000; hire the ₩200,000 car; the rest is profit.
+Profit vs the internal cost model: 2 pax +124k (Seoul) / +40k (intercity); 3 pax +252k/+140k;
+4 pax +290k/+240k; 6 pax +570k/+520k. The one thin case — solo outside Seoul — is handled
+operationally (ticket-and-boarding assistance rather than full-day escort), owner-confirmed
+not loss-making. The earlier two-zone discount ladder is superseded; per-route tuning stays
+available via the admin Routes page.
+
+Implementation note: tiers are stored as two rows per route (size 1 = 150,000; size 2 =
+140,000 applying to 2+), which the site renders naturally as "1 person / 2 people or more".
 **Depends on:** price tiers (008-era `price_tier` table), routes seed, admin Routes page (tier PATCH)
 
 ## 1. Cost inputs (owner, 2026-07-26)
