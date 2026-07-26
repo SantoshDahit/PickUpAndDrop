@@ -1,4 +1,12 @@
 spring:
+  datasource:
+    hikari:
+      # Pin the DB session zone to match the JVM and hibernate.jdbc.time_zone.
+      # Without this, a server session in another zone shifts DATE values by a
+      # day (a booking for the 15th read back as the 14th), which would also
+      # move travellers into the wrong landing-week bucket.
+      connection-init-sql: "SET time_zone = '+09:00'"
+
   jpa:
     # Schema is owned by Flyway; SQLite-era note gone — validate stays off
     # because MySQL enum/char mappings are asserted by the test suite instead.
