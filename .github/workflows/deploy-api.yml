@@ -202,6 +202,11 @@ jobs:
           docker rm -f "$OLD_CONTAINER" 2>/dev/null || true
           docker rm -f "${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}" 2>/dev/null || true
           docker images -f "dangling=true" -q | xargs -r docker rmi -f || true
+          # convention 18: drop older-dated local images of this app, keep the running one
+          REPO="${IMAGE_TAG%%:*}"
+          docker images --format '{{.Repository}}:{{.Tag}}' \
+            | grep "^${REPO}:${PROFILE}\." | grep -v "^${IMAGE_TAG}$" \
+            | xargs -r docker rmi -f 2>/dev/null || true
           echo "switched to ${NEW_COLOR}"
           REMOTE
 
