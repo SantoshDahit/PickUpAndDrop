@@ -21,6 +21,11 @@ public class DriverRepositoryImpl implements DriverRepository {
     }
 
     @Override
+    public Optional<Driver> findByUserId(String userId) {
+        return driverJpaRepository.findByAccountId(userId);
+    }
+
+    @Override
     public Driver save(Driver driver) {
         return driverJpaRepository.save(driver);
     }

@@ -46,6 +46,9 @@ public enum ErrorCode {
     DRIVER_IS_NOT_FOUND(HttpStatus.NOT_FOUND,
             "Driver not found.",
             "DRV_NF_001"),
+    DRIVER_PROFILE_NOT_LINKED(HttpStatus.NOT_FOUND,
+            "No driver profile is linked to this account.",
+            "DRV_NF_002"),
 
     // 400 Bad Request
     USER_DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST,
@@ -77,7 +80,10 @@ public enum ErrorCode {
             "DRV_BR_002"),
     DRIVER_HAS_UPCOMING_RIDES(HttpStatus.BAD_REQUEST,
             "This driver still has upcoming rides — unassign them first.",
-            "DRV_BR_003");
+            "DRV_BR_003"),
+    DRIVER_ACCOUNT_EXISTS(HttpStatus.BAD_REQUEST,
+            "This driver already has a login.",
+            "DRV_BR_004");
 
     private final HttpStatus httpStatus;
     private final String message;

@@ -26,6 +26,11 @@ public class TravelGroupService {
         return travelGroupRepository.findOpenByRouteId(routeId);
     }
 
+    @Transactional(readOnly = true)
+    public List<TravelGroup> getAllByDriverId(String driverId) {
+        return travelGroupRepository.findAllByDriverId(driverId);
+    }
+
     @Transactional
     public TravelGroup save(TravelGroup travelGroup) {
         return travelGroupRepository.save(travelGroup);

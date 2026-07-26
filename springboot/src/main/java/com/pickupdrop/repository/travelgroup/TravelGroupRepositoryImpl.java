@@ -24,6 +24,11 @@ public class TravelGroupRepositoryImpl implements TravelGroupRepository {
     }
 
     @Override
+    public List<TravelGroup> findAllByDriverId(String driverId) {
+        return travelGroupJpaRepository.findAllByDriverId(driverId);
+    }
+
+    @Override
     public TravelGroup save(TravelGroup travelGroup) {
         return travelGroupJpaRepository.save(travelGroup);
     }

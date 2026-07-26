@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface TravelGroupJpaRepository extends JpaRepository<TravelGroup, String> {
 
     List<TravelGroup> findAllByRouteIdAndStatusOrderByCreatedAtAsc(String routeId, GroupStatus status);
+
+    List<TravelGroup> findAllByDriverId(String driverId);
 }

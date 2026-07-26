@@ -12,6 +12,9 @@ public interface BookingJpaRepository extends JpaRepository<Booking, String> {
 
     List<Booking> findAllByTravelGroupIdAndStatusOrderByCreatedAtAsc(String groupId, BookingStatus status);
 
+    List<Booking> findAllByDriverIdAndStatusAndTravelDateGreaterThanEqualOrderByTravelDateAsc(
+            String driverId, BookingStatus status, LocalDate from);
+
     boolean existsByDriverIdAndStatusAndTravelDateGreaterThanEqual(
             String driverId, BookingStatus status, LocalDate from);
 

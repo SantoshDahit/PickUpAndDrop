@@ -24,6 +24,13 @@ public class DriverService {
                 .orElseThrow(() -> new ApiException(ErrorCode.DRIVER_IS_NOT_FOUND));
     }
 
+    @Transactional(readOnly = true)
+    public Driver getByUserId(String userId) {
+        return driverRepository.findByUserId(userId)
+                .filter(driver -> !driver.isDeleted())
+                .orElseThrow(() -> new ApiException(ErrorCode.DRIVER_PROFILE_NOT_LINKED));
+    }
+
     @Transactional
     public Driver save(Driver driver) {
         return driverRepository.save(driver);

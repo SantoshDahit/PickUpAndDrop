@@ -6,7 +6,9 @@ import com.pickupdrop.entity.Route;
 import com.pickupdrop.entity.User;
 import com.pickupdrop.enums.MatchPref;
 import com.pickupdrop.enums.Role;
+import com.pickupdrop.dto.DriverDto;
 import com.pickupdrop.service.BookingFacade;
+import com.pickupdrop.service.DriverFacade;
 import com.pickupdrop.service.DriverService;
 import com.pickupdrop.service.RouteService;
 import com.pickupdrop.service.UserService;
@@ -28,6 +30,7 @@ public class TestDataHelper {
     private final RouteService routeService;
     private final BookingFacade bookingFacade;
     private final DriverService driverService;
+    private final DriverFacade driverFacade;
     private final PasswordEncoder passwordEncoder;
 
     public User createUser() {
@@ -54,6 +57,13 @@ public class TestDataHelper {
         int n = SEQ.incrementAndGet();
         return driverService.save(new Driver("Driver " + n, "+82 10-2222-" + String.format("%04d", n),
                 "LIC-" + n, true, "Hyundai Staria", n + "가" + (1000 + n), seats));
+    }
+
+    /** Creates a login for the driver and returns the account user (password = PASSWORD). */
+    public User createDriverAccount(Driver driver) {
+        String email = "drv" + SEQ.incrementAndGet() + "-" + System.nanoTime() + "@example.com";
+        driverFacade.createAccount(driver.getId(), new DriverDto.AccountPostRequest(email, PASSWORD));
+        return userService.getActiveByEmail(email);
     }
 
     public BookingDto.Response createGroupBooking(User user, LocalDate travelDate, int partySize) {

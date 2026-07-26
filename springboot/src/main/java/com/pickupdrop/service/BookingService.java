@@ -47,6 +47,11 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
+    public List<Booking> getActiveIndividualByDriverId(String driverId, LocalDate from) {
+        return bookingRepository.findActiveIndividualByDriverId(driverId, from);
+    }
+
+    @Transactional(readOnly = true)
     public boolean existsUpcomingByDriverId(String driverId, LocalDate from) {
         return bookingRepository.existsUpcomingByDriverId(driverId, from);
     }

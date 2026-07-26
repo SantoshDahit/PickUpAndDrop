@@ -18,6 +18,8 @@ public interface BookingRepository {
 
     List<Booking> findActiveByGroupId(String groupId);
 
+    List<Booking> findActiveIndividualByDriverId(String driverId, LocalDate from);
+
     Page<Booking> search(BookingDto.SearchRequest searchRequest, Pageable pageable);
 
     /** Any active ride (group or individual) with this driver dated {@code from} or later? */

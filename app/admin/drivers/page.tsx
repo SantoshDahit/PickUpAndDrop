@@ -3,6 +3,7 @@ import { getAllDrivers } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { addDriver, toggleDriver } from "@/lib/actions";
 import AdminNav from "@/components/AdminNav";
+import PageHeader from "@/components/PageHeader";
 
 export default async function AdminDriversPage() {
   const session = await getSession();
@@ -11,14 +12,13 @@ export default async function AdminDriversPage() {
   const drivers = await getAllDrivers();
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-12">
-      <p className="eyebrow mb-3">Admin</p>
-      <h1 className="text-3xl mb-2">Drivers</h1>
-      <p className="text-ink-soft mb-8">
-        Keep license numbers on file — only licensed drivers keep this business legal.
-        Own-car drivers make small groups profitable; rentals need fuller vans.
-      </p>
-
+    <div>
+      <PageHeader
+        script="Admin"
+        title="Drivers"
+        subtitle="Keep license numbers on file — only licensed drivers keep this business legal. Own-car drivers make small groups profitable; rentals need fuller vans."
+      />
+      <div className="mx-auto max-w-6xl px-5 py-12">
       <AdminNav active="drivers" />
 
       {/* Add driver */}
@@ -82,6 +82,7 @@ export default async function AdminDriversPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

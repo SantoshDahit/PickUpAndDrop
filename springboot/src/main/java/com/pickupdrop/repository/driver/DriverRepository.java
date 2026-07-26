@@ -10,6 +10,8 @@ public interface DriverRepository {
 
     Optional<Driver> findById(String id);
 
+    Optional<Driver> findByUserId(String userId);
+
     Driver save(Driver driver);
 
     Page<Driver> search(DriverDto.SearchRequest searchRequest, Pageable pageable);

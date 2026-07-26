@@ -3,6 +3,7 @@ import { getAllRoutes, getTiersForRoute } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { addRoute, toggleRoute, setTier, deleteTier } from "@/lib/actions";
 import AdminNav from "@/components/AdminNav";
+import PageHeader from "@/components/PageHeader";
 
 export default async function AdminRoutesPage() {
   const session = await getSession();
@@ -14,14 +15,13 @@ export default async function AdminRoutesPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-12">
-      <p className="eyebrow mb-3">Admin</p>
-      <h1 className="text-3xl mb-2">Routes &amp; pricing</h1>
-      <p className="text-ink-soft mb-8">
-        Each route has its own price ladder. For group sizes without an exact tier,
-        the nearest smaller tier applies.
-      </p>
-
+    <div>
+      <PageHeader
+        script="Admin"
+        title="Routes & pricing"
+        subtitle="Each route has its own price ladder. For group sizes without an exact tier, the nearest smaller tier applies."
+      />
+      <div className="mx-auto max-w-6xl px-5 py-12">
       <AdminNav active="routes" />
 
       {/* Add route */}
@@ -107,6 +107,7 @@ export default async function AdminRoutesPage() {
             </section>
           );
         })}
+      </div>
       </div>
     </div>
   );

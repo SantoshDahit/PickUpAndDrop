@@ -60,14 +60,13 @@ export default async function AdminPage() {
   const pendingCount = requests.filter((r) => r.status === "pending").length;
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-12">
-      <p className="eyebrow mb-3">Admin</p>
-      <h1 className="text-3xl mb-2">Trip requests</h1>
-      <p className="text-ink-soft mb-8">
-        {requests.length} total · {pendingCount} pending. Grouped by arrival date —
-        requests on the same day and route can share one van.
-      </p>
-
+    <div>
+      <PageHeader
+        script="Admin"
+        title="Trip requests"
+        subtitle={`${requests.length} total · ${pendingCount} pending. Grouped by arrival date — requests on the same day and route can share one van.`}
+      />
+      <div className="mx-auto max-w-6xl px-5 py-12">
       <AdminNav active="requests" />
 
       {requests.length === 0 && (
@@ -185,6 +184,7 @@ export default async function AdminPage() {
             </section>
           );
         })}
+      </div>
       </div>
     </div>
   );

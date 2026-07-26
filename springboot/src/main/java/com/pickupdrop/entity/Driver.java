@@ -6,7 +6,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.Getter;
@@ -47,6 +50,10 @@ public class Driver extends BaseFullTimeEntity {
     @Column(name = "status", nullable = false)
     private DriverStatus status;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User account;      // null = roster-only driver, no login yet
+
     public Driver(String name, String phone, String licenseNo, boolean ownsVehicle,
                   String vehicle, String plateNo, int seats) {
         this.id = UUID.randomUUID().toString();
@@ -73,6 +80,21 @@ public class Driver extends BaseFullTimeEntity {
 
     public void updateStatus(DriverStatus status) {
         this.status = status;
+    }
+
+    public void linkAccount(User account) {
+        this.account = account;
+    }
+
+    public boolean hasAccount() {
+        return account != null;
+    }
+
+    /** Fields a driver may change about themselves; identity/capacity stay admin-only. */
+    public void updateOwnProfile(String phone, String vehicle, String plateNo) {
+        if (phone != null) this.phone = phone.isBlank() ? null : phone;
+        if (vehicle != null) this.vehicle = vehicle.isBlank() ? null : vehicle;
+        if (plateNo != null) this.plateNo = plateNo.isBlank() ? null : plateNo;
     }
 
     public boolean isAssignable() {

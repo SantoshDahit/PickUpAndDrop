@@ -79,6 +79,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WHITELIST).permitAll()
                         .requestMatchers("/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/v1/drivers/**").hasRole("DRIVER")
                         .anyRequest().authenticated())
                 .exceptionHandling(handler -> handler.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

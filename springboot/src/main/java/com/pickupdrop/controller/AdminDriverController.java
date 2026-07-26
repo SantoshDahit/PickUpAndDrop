@@ -62,6 +62,15 @@ public class AdminDriverController {
         return driverFacade.updateStatus(driverId, request);
     }
 
+    /** Create a login for a roster driver (drivers never self-signup). */
+    @PostMapping("/{driverId}/account")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DriverDto.Response createAccount(
+            @PathVariable String driverId,
+            @RequestBody @Valid DriverDto.AccountPostRequest request) {
+        return driverFacade.createAccount(driverId, request);
+    }
+
     /** Soft delete; refused while upcoming rides exist. */
     @DeleteMapping("/{driverId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

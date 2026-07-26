@@ -44,6 +44,13 @@ public class BookingRepositoryImpl implements BookingRepository {
     }
 
     @Override
+    public List<Booking> findActiveIndividualByDriverId(String driverId, LocalDate from) {
+        return bookingJpaRepository
+                .findAllByDriverIdAndStatusAndTravelDateGreaterThanEqualOrderByTravelDateAsc(
+                        driverId, BookingStatus.ACTIVE, from);
+    }
+
+    @Override
     public boolean existsUpcomingByDriverId(String driverId, LocalDate from) {
         return bookingJpaRepository.existsByDriverIdAndStatusAndTravelDateGreaterThanEqual(
                 driverId, BookingStatus.ACTIVE, from)
