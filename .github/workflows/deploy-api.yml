@@ -39,7 +39,8 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      # Convention 18 Phase 1: build (tests are covered on PR/branch runs)
+      # Convention 18 Phase 1: build. Tests run in ci.yml on every push,
+      # so the deploy path stays fast (-x test) without shipping untested code.
       - name: Gradle build
         working-directory: springboot
         run: ./gradlew clean build -x test

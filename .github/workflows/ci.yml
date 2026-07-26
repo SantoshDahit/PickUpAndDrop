@@ -1,0 +1,46 @@
+# Tests on every push/PR. The deploy workflow builds with -x test (convention
+# 18), so this is where the suite actually runs — Testcontainers spins up MySQL
+# on the runner's Docker.
+name: CI
+
+on:
+  push:
+    branches-ignore: []
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Backend test suite (Testcontainers MySQL)
+        working-directory: springboot
+        run: ./gradlew test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-report
+          path: springboot/build/reports/tests/test
+
+  typecheck-frontends:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Customer app (Next.js) build
+        run: npm ci --no-audit --no-fund && npm run build
+
+      - name: Admin console typecheck + build
+        working-directory: admin-web
+        run: npm ci --no-audit --no-fund && npx tsc --noEmit && npm run build
