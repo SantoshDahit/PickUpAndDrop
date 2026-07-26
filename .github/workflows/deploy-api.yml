@@ -135,19 +135,29 @@ jobs:
           esac
 
           # Phase 0: prove the DB credentials work before deploying anything.
-          # Shapes only — never the values.
+          # Values are printed in [brackets] with lengths: GitHub masks secret
+          # values as ***, so shapes are what actually tell us what is wrong.
           DB_HOST=$(printf '%s' "$DB_URL" | sed -E 's#^jdbc:mysql://([^:/]+).*#\1#')
           DB_PORT=$(printf '%s' "$DB_URL" | sed -E 's#^jdbc:mysql://[^:]+:([0-9]+).*#\1#')
           DB_NAME=$(printf '%s' "$DB_URL" | sed -E 's#^jdbc:mysql://[^/]+/([^?]+).*#\1#')
-          echo "db check: host=${DB_HOST} port=${DB_PORT} db=${DB_NAME} user_len=${#DB_USERNAME} pass_len=${#DB_PASSWORD}"
-          if ! docker run --rm --network "$DOCKER_NETWORK" mysql:8.0 \
-                 mysql -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USERNAME" -p"$DB_PASSWORD" \
-                 -e 'SELECT 1' "$DB_NAME" >/dev/null 2>/tmp/dbcheck.err; then
-            echo "::error::MySQL rejected these credentials — fix the user/password, not the pipeline"
-            sed 's/'"$DB_PASSWORD"'/***/g' /tmp/dbcheck.err | tail -5
-            echo "run on the server as MySQL root:"
-            echo "  CREATE USER IF NOT EXISTS '${DB_USERNAME}'@'%' IDENTIFIED WITH mysql_native_password BY '<the DB_PASSWORD secret>';"
-            echo "  GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USERNAME}'@'%'; FLUSH PRIVILEGES;"
+          case "$DB_PORT" in ''|*[!0-9]*) DB_PORT=3306 ;; esac
+          echo "db check: host=[${DB_HOST}] port=[${DB_PORT}] db=[${DB_NAME}]"
+          echo "  lengths: url=${#DB_URL} host=${#DB_HOST} db=${#DB_NAME} user=${#DB_USERNAME} pass=${#DB_PASSWORD}"
+          set +e
+          DBERR=$(docker run --rm --network "$DOCKER_NETWORK" mysql:8.0 \
+                    mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" \
+                    -e 'SELECT 1' "$DB_NAME" 2>&1)
+          DBRC=$?
+          set -e
+          if [ "$DBRC" -ne 0 ]; then
+            echo "::error::db check failed (exit ${DBRC})"
+            # bash replacement, not sed: passwords may contain / and other
+            # characters that break a sed s### expression
+            printf '%s\n' "${DBERR//${DB_PASSWORD}/REDACTED}" | tail -6
+            echo "--- what the message means ---"
+            echo "  'Access denied'          → the MySQL user/password differs from the secrets"
+            echo "  'Unknown MySQL server'   → DB_URL host is wrong (must be the container name, e.g. shared-mysql)"
+            echo "  \"Can't connect\"          → host resolves but nothing is listening on that port"
             exit 1
           fi
           echo "db credentials OK"
