@@ -1,6 +1,5 @@
 # API deploy — Blue-Green per springboot/conventions/18-deployment-convention.md
-# Docker Hub tag: {DOCKER_HUB_USERNAME}/{PROJECT}-{APP}:{PROFILE}.{YYYY.MM.DD}
-# Containers:     {PROJECT}-{APP}-{PROFILE}-BLUE / -GREEN, nginx port flip, zero downtime.
+# Split into build → deploy jobs; image tag {user}/{project}-api:{profile}.{YYYY.MM.DD}.
 name: Deploy API
 
 on:
@@ -24,13 +23,15 @@ env:
   BLUE_PORT_HOST: 18080          # host ports; avoid clashing with other projects
   GREEN_PORT_HOST: 18081
   DOMAIN: api.217.15.165.238.sslip.io
-  # Existing shared infrastructure on the box
   DOCKER_NETWORK: restaurant-network      # shared-mysql lives here
   CADDYFILE: /home/deploy/Caddyfile      # mounted into the caddy container
 
 jobs:
-  deploy:
+  # ---------------------------------------------------------------- build
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.image.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,9 +39,10 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+          cache: gradle
 
-      # Convention 18 Phase 1: build. Tests run in ci.yml on every push,
-      # so the deploy path stays fast (-x test) without shipping untested code.
+      # Convention 18 Phase 1: build. The suite runs in ci.yml on every push,
+      # so the deploy path stays fast without shipping untested code.
       - name: Gradle build
         working-directory: springboot
         run: ./gradlew clean build -x test
@@ -59,19 +61,39 @@ jobs:
           docker build -t "$TAG" springboot
           docker push "$TAG"
 
+  # --------------------------------------------------------------- deploy
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail early on missing runtime secrets
+        run: |
+          missing=""
+          [ -n "${{ secrets.DB_URL }}" ]      || missing="$missing DB_URL"
+          [ -n "${{ secrets.DB_USERNAME }}" ] || missing="$missing DB_USERNAME"
+          [ -n "${{ secrets.DB_PASSWORD }}" ] || missing="$missing DB_PASSWORD"
+          [ -n "${{ secrets.JWT_SECRET }}" ]  || missing="$missing JWT_SECRET"
+          if [ -n "$missing" ]; then
+            echo "::error::missing repository secrets:$missing — the container would crash-loop on startup"
+            exit 1
+          fi
+          echo "all runtime secrets present"
+
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          # keepalive: the health gate can hold the session idle for minutes
+          printf 'Host *\n  ServerAliveInterval 20\n  ServerAliveCountMax 30\n  TCPKeepAlive yes\n' >> ~/.ssh/config
 
-      # Phases 2-6 on the server: detect color → start new → health gate →
-      # nginx flip → retire old. Runtime secrets stay in /opt/pickupdrop/.env.
+      # Phases 2-6 on the server: detect colour → start new → health gate →
+      # Caddy flip → retire old. Secrets are injected as container env vars.
       - name: Blue-Green deploy
         run: |
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "IMAGE_TAG='${{ steps.image.outputs.tag }}' PROFILE='$PROFILE' \
+            "IMAGE_TAG='${{ needs.build.outputs.tag }}' PROFILE='$PROFILE' \
              DB_URL='${{ secrets.DB_URL }}' DB_USERNAME='${{ secrets.DB_USERNAME }}' \
              DB_PASSWORD='${{ secrets.DB_PASSWORD }}' JWT_SECRET='${{ secrets.JWT_SECRET }}' \
              CORS_ALLOWED_ORIGINS='${{ vars.CORS_ALLOWED_ORIGINS }}' \
@@ -84,14 +106,27 @@ jobs:
           BLUE_CONTAINER="${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}-BLUE"
           GREEN_CONTAINER="${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}-GREEN"
 
-          # Phase 2: detect the active colour
-          if docker ps --format '{{.Names}}' | grep -q "^${BLUE_CONTAINER}$"; then
+          # Phase 2: detect the active colour. "Active" means actually serving —
+          # a crash-looping container is treated as dead so we don't flip to it.
+          healthy() {
+            local name="$1" port="$2"
+            docker ps --format '{{.Names}}' | grep -q "^${name}$" || return 1
+            [ "$(docker inspect -f '{{.RestartCount}}' "$name" 2>/dev/null || echo 99)" -lt 3 ] || return 1
+            [ "$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/actuator/health/liveness")" = "200" ]
+          }
+          if healthy "$BLUE_CONTAINER" "$BLUE_PORT"; then
             NEW_COLOR="GREEN"; NEW_PORT=$GREEN_PORT; NEW_CONTAINER=$GREEN_CONTAINER
             OLD_PORT=$BLUE_PORT; OLD_CONTAINER=$BLUE_CONTAINER
-          elif docker ps --format '{{.Names}}' | grep -q "^${GREEN_CONTAINER}$"; then
+          elif healthy "$GREEN_CONTAINER" "$GREEN_PORT"; then
             NEW_COLOR="BLUE"; NEW_PORT=$BLUE_PORT; NEW_CONTAINER=$BLUE_CONTAINER
             OLD_PORT=$GREEN_PORT; OLD_CONTAINER=$GREEN_CONTAINER
           else
+            # nothing is serving (first deploy, or previous attempts are looping):
+            # clear both colours and start clean on BLUE
+            echo "no healthy container — clearing stale colours"
+            for c in "$BLUE_CONTAINER" "$GREEN_CONTAINER"; do
+              docker rm -f "$c" 2>/dev/null || true
+            done
             NEW_COLOR="BLUE"; NEW_PORT=$BLUE_PORT; NEW_CONTAINER=$BLUE_CONTAINER
             OLD_PORT=$GREEN_PORT; OLD_CONTAINER=$GREEN_CONTAINER
           fi
@@ -102,8 +137,7 @@ jobs:
           # is stored on the server, and nothing is committed.
           EXTRA_ENV=()
           [ -n "${CORS_ALLOWED_ORIGINS:-}" ] && EXTRA_ENV+=(-e "CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}")
-          docker stop "$NEW_CONTAINER" 2>/dev/null || true
-          docker rm "$NEW_CONTAINER" 2>/dev/null || true
+          docker rm -f "$NEW_CONTAINER" 2>/dev/null || true
           docker run -d --name "$NEW_CONTAINER" \
             --network "$DOCKER_NETWORK" \
             -p 127.0.0.1:${NEW_PORT}:${CONTAINER_PORT} \
@@ -113,26 +147,31 @@ jobs:
             -e "DB_PASSWORD=${DB_PASSWORD}" \
             -e "JWT_SECRET=${JWT_SECRET}" \
             "${EXTRA_ENV[@]}" \
-            --restart always \
+            --restart on-failure:2 \
             "$IMAGE_TAG"
 
-          # Phase 4: health gate (liveness), rollback on failure
+          # Phase 4: health gate. Prints every attempt so the SSH session never
+          # goes idle, and bails the moment the app crash-loops.
           HEALTH_URL="http://localhost:${NEW_PORT}/actuator/health/liveness"
-          MAX_RETRIES=30; RETRY_INTERVAL=10
-          for i in $(seq 1 $MAX_RETRIES); do
-            if ! docker ps --format '{{.Names}}' | grep -q "^${NEW_CONTAINER}$"; then
-              echo "container died"; docker logs "$NEW_CONTAINER" | tail -40 || true; exit 1
-            fi
+          for i in $(seq 1 60); do
+            RESTARTS=$(docker inspect -f '{{.RestartCount}}' "$NEW_CONTAINER" 2>/dev/null || echo 0)
+            RUNNING=$(docker inspect -f '{{.State.Running}}' "$NEW_CONTAINER" 2>/dev/null || echo false)
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+            echo "  attempt ${i}/60: http=${STATUS} running=${RUNNING} restarts=${RESTARTS}"
             [ "$STATUS" = "200" ] && { echo "health check passed"; break; }
-            if [ "$i" = "$MAX_RETRIES" ]; then
-              echo "health check failed — rolling back"
-              docker logs "$NEW_CONTAINER" | tail -40 || true
-              docker stop "$NEW_CONTAINER" || true
-              docker rm "$NEW_CONTAINER" || true
+            if [ "$RUNNING" != "true" ] || [ "$RESTARTS" -ge 2 ]; then
+              echo "::error::container is not staying up — application startup failed"
+              docker logs --tail 60 "$NEW_CONTAINER" || true
+              docker rm -f "$NEW_CONTAINER" || true
               exit 1
             fi
-            sleep $RETRY_INTERVAL
+            if [ "$i" = "60" ]; then
+              echo "::error::health check timed out"
+              docker logs --tail 60 "$NEW_CONTAINER" || true
+              docker rm -f "$NEW_CONTAINER" || true
+              exit 1
+            fi
+            sleep 5
           done
 
           # Phase 5: Caddy traffic flip (validated, reverted on failure).
@@ -146,25 +185,32 @@ jobs:
             { print }
           ' "${CADDYFILE}.bak" > "$CADDYFILE"
           grep -A1 "^${DOMAIN} {" "$CADDYFILE" | grep -q ":${NEW_PORT}" \
-            || { echo "caddyfile flip did not apply"; cp "${CADDYFILE}.bak" "$CADDYFILE"; \
-                 docker stop "$NEW_CONTAINER" || true; docker rm "$NEW_CONTAINER" || true; exit 1; }
+            || { echo "::error::caddyfile flip did not apply"; cp "${CADDYFILE}.bak" "$CADDYFILE"; \
+                 docker rm -f "$NEW_CONTAINER" || true; exit 1; }
           if docker exec caddy caddy validate --config /etc/caddy/Caddyfile 2>/dev/null \
              && docker exec caddy caddy reload --config /etc/caddy/Caddyfile; then
             echo "caddy now proxying :${NEW_PORT}"
           else
             cp "${CADDYFILE}.bak" "$CADDYFILE"
             docker exec caddy caddy reload --config /etc/caddy/Caddyfile || true
-            docker stop "$NEW_CONTAINER" || true
-            docker rm "$NEW_CONTAINER" || true
+            docker rm -f "$NEW_CONTAINER" || true
             exit 1
           fi
 
           # Phase 6: retire the old colour + cleanup
           sleep 10
-          docker stop "$OLD_CONTAINER" 2>/dev/null || true
-          docker rm "$OLD_CONTAINER" 2>/dev/null || true
-          docker stop "${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}" 2>/dev/null || true
-          docker rm "${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}" 2>/dev/null || true
+          docker rm -f "$OLD_CONTAINER" 2>/dev/null || true
+          docker rm -f "${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}" 2>/dev/null || true
           docker images -f "dangling=true" -q | xargs -r docker rmi -f || true
           echo "switched to ${NEW_COLOR}"
           REMOTE
+
+      - name: Verify public endpoint
+        run: |
+          for i in $(seq 1 12); do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://${DOMAIN}/v1/routes" || echo 000)
+            echo "  public check ${i}: ${CODE}"
+            [ "$CODE" = "200" ] && { echo "https://${DOMAIN} is live"; exit 0; }
+            sleep 5
+          done
+          echo "::error::public endpoint not returning 200"; exit 1
