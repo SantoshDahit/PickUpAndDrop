@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { PriceTier, Route } from "@/lib/db";
+import type { PriceTier, Route } from "@/lib/api";
 import { createTripRequest } from "@/lib/actions";
 
-function priceFor(tiers: PriceTier[], routeId: number, n: number): number | null {
+function priceFor(tiers: PriceTier[], routeId: string, n: number): number | null {
   const routeTiers = tiers.filter((t) => t.route_id === routeId);
   if (routeTiers.length === 0) return null;
   let match: PriceTier | null = null;
@@ -15,7 +15,7 @@ function priceFor(tiers: PriceTier[], routeId: number, n: number): number | null
 }
 
 /** Next tier above n with a cheaper per-person price, if any. */
-function nextSaving(tiers: PriceTier[], routeId: number, n: number) {
+function nextSaving(tiers: PriceTier[], routeId: string, n: number) {
   const current = priceFor(tiers, routeId, n);
   if (current === null) return null;
   const above = tiers
@@ -35,15 +35,17 @@ export default function BookingForm({
   initialRouteId,
   initialPeople,
   initialDate,
+  joinRide,
 }: {
   routes: Route[];
   tiers: PriceTier[];
   error?: string;
-  initialRouteId?: number;
+  initialRouteId?: string;
   initialPeople?: number;
   initialDate?: string;
+  joinRide?: { id: string; targetDate: string; toLocation: string };
 }) {
-  const [routeId, setRouteId] = useState(initialRouteId ?? routes[0]?.id ?? 0);
+  const [routeId, setRouteId] = useState(initialRouteId ?? routes[0]?.id ?? '');
   const [people, setPeople] = useState(initialPeople ?? 1);
 
   const perPerson = useMemo(() => priceFor(tiers, routeId, people), [tiers, routeId, people]);
@@ -53,6 +55,13 @@ export default function BookingForm({
     <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] items-start">
       <form action={createTripRequest} className="card p-6 sm:p-8 grid gap-6">
         {error && <div className="notice-error">{error}</div>}
+        {joinRide && (
+          <div className="notice-ok">
+            You're joining the published ride to <strong>{joinRide.toLocation}</strong> around{" "}
+            <strong>{joinRide.targetDate}</strong> — land within 7 days of that date.
+            <input type="hidden" name="group_id" value={joinRide.id} />
+          </div>
+        )}
 
         <div>
           <label className="field-label" htmlFor="route_id">Route</label>
@@ -61,7 +70,7 @@ export default function BookingForm({
             id="route_id"
             name="route_id"
             value={routeId}
-            onChange={(e) => setRouteId(Number(e.target.value))}
+            onChange={(e) => setRouteId(e.target.value)}
           >
             {routes.map((r) => (
               <option key={r.id} value={r.id}>
@@ -98,7 +107,7 @@ export default function BookingForm({
             </span>
             <button
               type="button"
-              onClick={() => setPeople((p) => Math.min(12, p + 1))}
+              onClick={() => setPeople((p) => Math.min(6, p + 1))}
               className="h-[46px] w-14 text-xl text-ink-soft hover:bg-paper-deep transition-colors cursor-pointer"
               aria-label="One more person"
             >

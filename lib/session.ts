@@ -1,43 +1,32 @@
-import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const secret = new TextEncoder().encode(
-  process.env.SESSION_SECRET ?? "pickupdrop-dev-secret-change-in-production"
-);
-
-const COOKIE = "pud_session";
-
 export type Session = {
-  uid: number;
+  uid: string;
   name: string;
   isAdmin: boolean;
 };
 
-export async function createSession(session: Session) {
-  const token = await new SignJWT(session)
-    .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("30d")
-    .sign(secret);
+const TOKEN_COOKIE = "pud_token";
+const USER_COOKIE = "pud_user";
+
+const COOKIE_OPTS = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  maxAge: 60 * 60 * 3, // matches the API access-token lifetime
+  path: "/",
+};
+
+export async function createSession(token: string, user: { id: string; name: string; role: string }) {
   const store = await cookies();
-  store.set(COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 30,
-    path: "/",
-  });
+  store.set(TOKEN_COOKIE, token, COOKIE_OPTS);
+  store.set(USER_COOKIE, JSON.stringify({ uid: user.id, name: user.name, isAdmin: user.role === "ADMIN" }), COOKIE_OPTS);
 }
 
 export async function getSession(): Promise<Session | null> {
-  const store = await cookies();
-  const token = store.get(COOKIE)?.value;
-  if (!token) return null;
+  const raw = (await cookies()).get(USER_COOKIE)?.value;
+  if (!raw) return null;
   try {
-    const { payload } = await jwtVerify(token, secret);
-    return {
-      uid: payload.uid as number,
-      name: payload.name as string,
-      isAdmin: payload.isAdmin as boolean,
-    };
+    return JSON.parse(raw) as Session;
   } catch {
     return null;
   }
@@ -45,5 +34,6 @@ export async function getSession(): Promise<Session | null> {
 
 export async function destroySession() {
   const store = await cookies();
-  store.delete(COOKIE);
+  store.delete(TOKEN_COOKIE);
+  store.delete(USER_COOKIE);
 }

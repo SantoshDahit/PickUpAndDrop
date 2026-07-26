@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getActiveRoutes, getAllTiers, getTiersForRoute, type PriceTier, type Route } from "@/lib/db";
+import { getRoutesWithTiers, type PriceTier, type Route } from "@/lib/api";
 import FareCalculator from "@/components/FareCalculator";
 
 function Icon({ children }: { children: React.ReactNode }) {
@@ -35,7 +35,7 @@ function photoFor(route: Route): string {
   return PHOTOS.default;
 }
 
-function cheapestFare(tiers: PriceTier[], routeId: number): number | null {
+function cheapestFare(tiers: PriceTier[], routeId: string): number | null {
   const prices = tiers.filter((t) => t.route_id === routeId).map((t) => t.price_per_person);
   return prices.length ? Math.min(...prices) : null;
 }
@@ -129,10 +129,11 @@ const FAQS = [
 ];
 
 export default async function Home() {
-  const routes = await getActiveRoutes();
-  const tiers = await getAllTiers();
+  const { routes, tiers } = await getRoutesWithTiers();
   const featured = routes[0];
-  const featuredTiers = featured ? await getTiersForRoute(featured.id) : [];
+  const featuredTiers = featured
+    ? tiers.filter((t) => t.route_id === featured.id).sort((a, b) => a.group_size - b.group_size)
+    : [];
 
   return (
     <div>
@@ -325,7 +326,7 @@ export default async function Home() {
               <table className="w-full text-[15px]">
                 <tbody>
                   {featuredTiers.map((t, i) => (
-                    <tr key={t.id} className={i > 0 ? "border-t border-line" : ""}>
+                    <tr key={t.group_size} className={i > 0 ? "border-t border-line" : ""}>
                       <td className="py-3 text-ink">
                         {t.group_size} {t.group_size === 1 ? "person" : "people"}
                         {i === featuredTiers.length - 1 && (

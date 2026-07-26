@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { changePassword } from "@/lib/actions";
-import { get } from "@/lib/db";
+import { api } from "@/lib/api";
 import PageHeader from "@/components/PageHeader";
 
 export default async function AccountPage({
@@ -13,10 +13,7 @@ export default async function AccountPage({
   if (!session) redirect("/login");
 
   const { error, ok } = await searchParams;
-  const user = await get<{ name: string; email: string }>(
-    "SELECT name, email FROM users WHERE id = ?",
-    [session.uid]
-  );
+  const user = await api<{ name: string; email: string }>("/v1/users/me");
 
   return (
     <div>

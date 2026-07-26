@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { PriceTier, Route } from "@/lib/db";
+import type { PriceTier, Route } from "@/lib/api";
 
-function priceFor(tiers: PriceTier[], routeId: number, n: number): number | null {
+function priceFor(tiers: PriceTier[], routeId: string, n: number): number | null {
   const routeTiers = tiers.filter((t) => t.route_id === routeId);
   if (routeTiers.length === 0) return null;
   let match: PriceTier | null = null;
@@ -22,7 +22,7 @@ export default function FareCalculator({
   tiers: PriceTier[];
 }) {
   const router = useRouter();
-  const [routeId, setRouteId] = useState(routes[0]?.id ?? 0);
+  const [routeId, setRouteId] = useState(routes[0]?.id ?? '');
   const [people, setPeople] = useState(2);
   const [date, setDate] = useState("");
 
@@ -45,7 +45,7 @@ export default function FareCalculator({
         <select
           className="w-full bg-transparent font-display text-[15px] text-ink cursor-pointer focus:outline-none appearance-none"
           value={routeId}
-          onChange={(e) => setRouteId(Number(e.target.value))}
+          onChange={(e) => setRouteId(e.target.value)}
           aria-label="Route"
         >
           {routes.map((r) => (
@@ -81,7 +81,7 @@ export default function FareCalculator({
           <span className="font-display text-[15px] text-ink tabular w-5 text-center">{people}</span>
           <button
             type="button"
-            onClick={() => setPeople((p) => Math.min(12, p + 1))}
+            onClick={() => setPeople((p) => Math.min(6, p + 1))}
             className="flex h-7 w-7 items-center justify-center rounded-full border border-line-strong text-ink-soft hover:border-accent hover:text-accent-deep transition-colors cursor-pointer"
             aria-label="One more person"
           >

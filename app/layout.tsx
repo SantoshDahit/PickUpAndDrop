@@ -77,9 +77,9 @@ export default async function RootLayout({
             <nav className="flex items-center gap-0.5">
               {session?.isAdmin ? (
                 <>
-                  <Link href="/admin" className={navLink}>Requests</Link>
-                  <Link href="/admin/routes" className={navLink}>Routes &amp; pricing</Link>
-                  <Link href="/admin/drivers" className={navLink}>Drivers</Link>
+                  <a href={process.env.NEXT_PUBLIC_ADMIN_URL ?? "http://localhost:5173"} className={navLink}>
+                    Admin console
+                  </a>
                   <Link href="/account" className={navLink}>Account</Link>
                   <form action={logout} className="ml-2">
                     <button className="btn btn-ghost btn-sm">Log out</button>

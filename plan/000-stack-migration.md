@@ -3,6 +3,12 @@
 **Status:** Accepted — **Revised 2026-07-26**: full REST API per `springboot/conventions/`
 **Supersedes:** the Next.js 16 implementation at the repo root, and the earlier Thymeleaf server-rendered delivery layer (built, then replaced the same week — git history keeps it)
 
+## Revision 2026-07-26 (later) — the Next.js app is the customer frontend
+
+The owner's call: the Next.js app at the repo root is the **main user pages**, not a throwaway
+prototype. It was ported onto the `/v1` API (plan 007) instead of being deleted; the old
+"remove the Next.js sources at cutover" step below is void.
+
 ## Revision 2026-07-26 — team conventions adopted
 
 The team's backend conventions (26 documents + code templates, now at `springboot/conventions/`)

@@ -1,39 +1,36 @@
-# 007 — Customer web app
+# 007 — Customer frontend: the Next.js app, ported to the API
 
-**Status:** Implemented (2026-07-26) — 10/10 two-traveller browser checks green
+**Status:** Implemented (2026-07-26) — 11/11 two-traveller browser checks green
 **Depends on:** 001–006 (full API surface)
 
-## 1. Problem / Goal
+## 1. Decision (owner, 2026-07-26)
 
-Travellers have no UI — the Next.js prototype at the repo root is a frozen standalone demo on its own SQLite. Build the real customer web app against the `/v1` API: sign up, book (or join a published ride), coordinate in the group chat, manage trips and account.
+**The Next.js app at the repo root is the main user pages** — the owner designed it and it stays.
+An earlier same-day iteration of this plan built a separate Vite SPA (`customer-web/`); it was
+removed the same day in favour of porting the Next.js app (git history keeps it). Plan 000's
+"delete the prototype at cutover" language is void: the Next.js app is the product, the thing
+that got deleted was its private SQLite data layer.
 
-## 2. Decisions
+## 2. What the port changed (design untouched)
 
-- **Vite + React + TypeScript SPA** in `customer-web/` (port 5174), same toolchain as `admin-web` — one frontend stack to maintain. SEO for the marketing landing page is consciously deferred (static prerender or a Next shell later); the app itself is behind login anyway.
-- Design language ported from the frozen prototype (`app/globals.css` tokens) — same look travellers already saw.
-- JWT in localStorage, fetch wrapper identical in shape to admin-web's. CORS: add `http://localhost:5174` to the backend allowlist.
-- The prototype stays frozen until this app reaches parity (plan 000's cutover checklist); it still owns the fare-calculator demo (pricing is an unbuilt plan).
+- `lib/db.ts` (SQLite/Turso) **deleted**; `lib/api.ts` server-side fetch wrapper to `/v1`
+  (token from an httpOnly cookie — better than localStorage). `lib/session.ts` now stores the
+  API JWT + user snapshot in cookies; `getSession()` keeps its old shape so layout/pages didn't change.
+- `lib/actions.ts`: every server action proxies the API (signup/login/logout, password change,
+  create booking incl. published-ride join, cancel, chat message, date change, leave group).
+- New page in the same design language: `/groups/[id]` — members, agreement banner, driver card,
+  chat, change-my-date, leave.
+- `/book` gains the published-rides section ("Or join a ride that's already going") wired to 006.
+- `/trips` reads `/v1/bookings/me`: ticket design kept; fare stub computed from the pricing tiers
+  by party size (booking-level price snapshots are a future pricing plan).
+- Admin pages/nav removed from the Next app — the admin console (004) owns that; the header shows
+  an "Admin console" link for ADMIN sessions (`NEXT_PUBLIC_ADMIN_URL`).
+- Backend addition: `price_tier` table seeded with the prototype's fares; `GET /v1/routes` now
+  returns tiers, feeding the home fare calculator and BookingForm's live fare panel unchanged.
+- Removed deps: `@libsql/client`, `bcryptjs`, `jose`.
 
-## 3. Pages
+## 3. Verified (headless, two travellers)
 
-| Page | Backing API | Notes |
-|---|---|---|
-| `/` landing | `GET /v1/routes` | Hero + how-it-works, prototype copy; public |
-| `/signup`, `/login` | `/v1/auth/*` | Auto-login on signup |
-| `/book` | `POST /v1/bookings`, `GET /v1/groups/open` | The 002 form (route, date, party, group/individual, intro…) **plus** the 006 browse: published rides with seats/dates and a Join button that books straight into `groupId` |
-| `/trips` | `GET /v1/bookings/me`, `DELETE /v1/bookings/{id}` | Cards with status, effective driver (name/vehicle/plate), group link, cancel |
-| `/groups/:id` | group + messages endpoints | Members, agreement banner, driver card, chat (post), change my date, leave |
-| `/account` | `/v1/users/me*` | Profile edit, password change, danger-zone delete |
-
-## 4. Acceptance criteria
-
-- [ ] Visitor lands, signs up, books with "group me" → trip card shows the group; a second user booking within window lands in the same group and they exchange chat messages from two browsers/sessions.
-- [ ] `/book` lists published rides; Join books into that exact ride and it appears in `/trips`.
-- [ ] Assigned driver (name, vehicle, plate) renders on the trip card and group page.
-- [ ] Date change from the group page updates the member card; agreement banner appears when dates converge.
-- [ ] Cancel, leave-group, profile edit, password change, and account deletion all round-trip with readable API error messages.
-- [ ] Unauthenticated deep links bounce to `/login`; landing stays public.
-
-## 5. Test plan
-
-Backend contract is covered by the 33 integration tests; the SPA is verified by a headless-browser pass of the acceptance list (two users end-to-end). Frontend unit tests deferred, same policy as admin-web.
+Home fares from API → signup → book (group default) → ticket with fare stub → second traveller
+auto-matched → chat both ways → date convergence banner → published-ride join from `/book` →
+account from API → auth guards. Zero page errors.
