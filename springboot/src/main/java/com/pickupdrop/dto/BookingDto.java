@@ -17,6 +17,7 @@ public class BookingDto {
 
     public record PostRequest(
             @NotBlank String routeId,
+            String groupId,            // optional: join a specific published ride
             @NotNull LocalDate travelDate,
             @Size(max = 20) String flightNo,
             @Min(1) @Max(6) int partySize,

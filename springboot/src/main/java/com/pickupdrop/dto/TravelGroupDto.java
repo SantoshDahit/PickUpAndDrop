@@ -8,6 +8,37 @@ import lombok.NoArgsConstructor;
 
 public class TravelGroupDto {
 
+    public record AdminPostRequest(
+            @jakarta.validation.constraints.NotBlank String routeId,
+            @jakarta.validation.constraints.NotNull LocalDate targetDate
+    ) {
+    }
+
+    /** Public browse card — deliberately free of any personal data. */
+    @Getter
+    @NoArgsConstructor
+    public static class OpenRideResponse {
+        private String id;
+        private RouteDto.Response route;
+        private LocalDate targetDate;
+        private int memberCount;
+        private int seatsLeft;
+        private LocalDate earliestDate;   // null while empty
+        private LocalDate latestDate;
+
+        public OpenRideResponse(String id, RouteDto.Response route, LocalDate targetDate,
+                                int memberCount, int seatsLeft,
+                                LocalDate earliestDate, LocalDate latestDate) {
+            this.id = id;
+            this.route = route;
+            this.targetDate = targetDate;
+            this.memberCount = memberCount;
+            this.seatsLeft = seatsLeft;
+            this.earliestDate = earliestDate;
+            this.latestDate = latestDate;
+        }
+    }
+
     /**
      * Group page view. Members see each other's first name, party size,
      * preferred date and intro — never email, phone, contact or notes.

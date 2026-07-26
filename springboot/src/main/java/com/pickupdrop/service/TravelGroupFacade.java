@@ -4,7 +4,9 @@ import com.pickupdrop.dto.GroupMessageDto;
 import com.pickupdrop.dto.TravelGroupDto;
 import com.pickupdrop.entity.Booking;
 import com.pickupdrop.entity.GroupMessage;
+import com.pickupdrop.entity.Route;
 import com.pickupdrop.entity.TravelGroup;
+import com.pickupdrop.enums.GroupStatus;
 import com.pickupdrop.exception.ApiException;
 import com.pickupdrop.exception.ErrorCode;
 import com.pickupdrop.mapper.DriverMapper;
@@ -24,8 +26,52 @@ public class TravelGroupFacade {
     private final GroupMessageService groupMessageService;
     private final UserService userService;
     private final BookingFacade bookingFacade;
+    private final RouteService routeService;
     private final RouteMapper routeMapper;
     private final DriverMapper driverMapper;
+
+    // ===== Published rides (plan 006) =====
+
+    @Transactional
+    public TravelGroupDto.OpenRideResponse publishRide(TravelGroupDto.AdminPostRequest request) {
+        LocalDate today = LocalDate.now();
+        if (request.targetDate().isBefore(today) || request.targetDate().isAfter(today.plusDays(365))) {
+            throw new ApiException(ErrorCode.BOOKING_DATE_IS_INVALID);
+        }
+        Route route = routeService.getActiveById(request.routeId());
+        TravelGroup ride = travelGroupService.save(new TravelGroup(route, request.targetDate()));
+        return toOpenRide(ride, List.of());
+    }
+
+    @Transactional
+    public void closeRide(String groupId) {
+        TravelGroup ride = travelGroupService.getById(groupId);
+        if (!bookingService.getActiveByGroupId(groupId).isEmpty()) {
+            throw new ApiException(ErrorCode.GROUP_HAS_MEMBERS);
+        }
+        ride.updateStatus(GroupStatus.CLOSED);
+        travelGroupService.save(ride);
+    }
+
+    /** Browse card list — no personal data, ever. */
+    @Transactional(readOnly = true)
+    public List<TravelGroupDto.OpenRideResponse> listOpenRides() {
+        LocalDate today = LocalDate.now();
+        return travelGroupService.getOpenPublicRides().stream()
+                .filter(ride -> !ride.getTargetDate().isBefore(today))
+                .map(ride -> toOpenRide(ride, bookingService.getActiveByGroupId(ride.getId())))
+                .filter(card -> card.getSeatsLeft() > 0)
+                .toList();
+    }
+
+    private TravelGroupDto.OpenRideResponse toOpenRide(TravelGroup ride, List<Booking> members) {
+        int seats = members.stream().mapToInt(Booking::getPartySize).sum();
+        return new TravelGroupDto.OpenRideResponse(
+                ride.getId(), routeMapper.toResponse(ride.getRoute()), ride.getTargetDate(),
+                members.size(), TravelGroup.MAX_SEATS - seats,
+                members.stream().map(Booking::getTravelDate).min(java.util.Comparator.naturalOrder()).orElse(null),
+                members.stream().map(Booking::getTravelDate).max(java.util.Comparator.naturalOrder()).orElse(null));
+    }
 
     @Transactional(readOnly = true)
     public TravelGroupDto.Response getById(String userId, boolean isAdmin, String groupId) {

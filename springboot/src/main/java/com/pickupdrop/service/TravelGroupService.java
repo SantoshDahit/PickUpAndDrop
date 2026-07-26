@@ -31,6 +31,11 @@ public class TravelGroupService {
         return travelGroupRepository.findAllByDriverId(driverId);
     }
 
+    @Transactional(readOnly = true)
+    public List<TravelGroup> getOpenPublicRides() {
+        return travelGroupRepository.findOpenPublicRides();
+    }
+
     @Transactional
     public TravelGroup save(TravelGroup travelGroup) {
         return travelGroupRepository.save(travelGroup);

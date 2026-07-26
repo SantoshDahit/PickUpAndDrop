@@ -68,7 +68,7 @@ public class TestDataHelper {
 
     public BookingDto.Response createGroupBooking(User user, LocalDate travelDate, int partySize) {
         return bookingFacade.create(user.getId(), new BookingDto.PostRequest(
-                firstRoute().getId(), travelDate, null, partySize, MatchPref.GROUP,
+                firstRoute().getId(), null, travelDate, null, partySize, MatchPref.GROUP,
                 "hello from " + user.getName(), null, null));
     }
 }

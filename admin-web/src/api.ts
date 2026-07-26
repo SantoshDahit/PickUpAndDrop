@@ -50,6 +50,11 @@ export interface BookingSummary {
 export interface Driver {
   id: string; name: string; phone: string | null; licenseNo: string | null; ownsVehicle: boolean;
   vehicle: string | null; plateNo: string | null; seats: number; status: 'ACTIVE' | 'INACTIVE';
+  hasAccount?: boolean;
+}
+export interface OpenRide {
+  id: string; route: Route; targetDate: string; memberCount: number; seatsLeft: number;
+  earliestDate: string | null; latestDate: string | null;
 }
 export interface Page<T> { content: T[]; page: { size: number; number: number; totalElements: number; totalPages: number } }
 export interface GroupView {

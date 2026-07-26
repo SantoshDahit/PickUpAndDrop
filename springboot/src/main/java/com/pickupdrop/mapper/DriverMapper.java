@@ -17,7 +17,10 @@ public class DriverMapper extends BaseMapper<Driver, DriverDto> {
     }
 
     public DriverDto.Response toResponse(Driver entity) {
-        return super.toDto(entity, DriverDto.Response.class);
+        DriverDto.Response response = super.toDto(entity, DriverDto.Response.class);
+        // hasAccount() is not a bean accessor; ModelMapper won't pick it up.
+        response.setHasAccount(entity.hasAccount());
+        return response;
     }
 
     public DriverDto.SummaryResponse toSummaryResponse(Driver entity) {

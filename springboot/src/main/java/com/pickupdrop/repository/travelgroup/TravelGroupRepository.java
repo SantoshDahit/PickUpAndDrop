@@ -12,5 +12,7 @@ public interface TravelGroupRepository {
 
     List<TravelGroup> findAllByDriverId(String driverId);
 
+    List<TravelGroup> findOpenPublicRides();
+
     TravelGroup save(TravelGroup travelGroup);
 }

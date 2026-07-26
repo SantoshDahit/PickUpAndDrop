@@ -8,6 +8,7 @@ export default function Drivers() {
   const [form, setForm] = useState({ ...EMPTY })
   const [error, setError] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -97,7 +98,11 @@ export default function Drivers() {
             <tbody>
               {page?.content.map(d => (
                 <tr key={d.id}>
-                  <td>{d.name}<div className="muted small">{d.licenseNo ?? ''}</div></td>
+                  <td>
+                    <a href="#" onClick={e => { e.preventDefault(); setDetailId(d.id) }}
+                       style={{ fontWeight: 550 }}>{d.name}</a>
+                    <div className="muted small">{d.licenseNo ?? ''}</div>
+                  </td>
                   <td>{d.phone ?? '—'}</td>
                   <td>{d.vehicle ?? '—'}<div className="muted small">{d.plateNo ?? ''}</div></td>
                   <td>{d.seats}</td>
@@ -117,6 +122,119 @@ export default function Drivers() {
           </table>
         </div>
       </div>
+      {detailId && (
+        <DriverDetail
+          driverId={detailId}
+          onClose={() => setDetailId(null)}
+          onChanged={(ok) => { note(ok, null); load() }}
+          onError={(m) => note(null, m)}
+        />
+      )}
     </>
+  )
+}
+
+function DriverDetail({ driverId, onClose, onChanged, onError }: {
+  driverId: string
+  onClose: () => void
+  onChanged: (message: string) => void
+  onError: (message: string) => void
+}) {
+  const [driver, setDriver] = useState<Driver | null>(null)
+  const [edit, setEdit] = useState({ name: '', phone: '', licenseNo: '', vehicle: '', plateNo: '', seats: 4 })
+  const [account, setAccount] = useState({ email: '', password: '' })
+  const [localError, setLocalError] = useState<string | null>(null)
+
+  const loadDetail = useCallback(async () => {
+    try {
+      const d = await api<Driver>(`/v1/admin/drivers/${driverId}`)
+      setDriver(d)
+      setEdit({
+        name: d.name, phone: d.phone ?? '', licenseNo: d.licenseNo ?? '',
+        vehicle: d.vehicle ?? '', plateNo: d.plateNo ?? '', seats: d.seats,
+      })
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Failed to load driver')
+      onClose()
+    }
+  }, [driverId, onError, onClose])
+
+  useEffect(() => { loadDetail() }, [loadDetail])
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault()
+    setLocalError(null)
+    try {
+      await api(`/v1/admin/drivers/${driverId}`, { method: 'PATCH', body: JSON.stringify(edit) })
+      onChanged('Driver updated.')
+      loadDetail()
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Update failed')
+    }
+  }
+
+  async function createLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setLocalError(null)
+    try {
+      await api(`/v1/admin/drivers/${driverId}/account`, { method: 'POST', body: JSON.stringify(account) })
+      onChanged(`Login created for ${driver?.name}.`)
+      setAccount({ email: '', password: '' })
+      loadDetail()
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : 'Login creation failed')
+    }
+  }
+
+  if (!driver) return null
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" style={{ width: 480, maxHeight: '88vh', overflowY: 'auto' }}
+           onClick={e => e.stopPropagation()}>
+        <h2>{driver.name}
+          {' '}<span className={`stamp ${driver.status === 'ACTIVE' ? 'ok' : 'off'}`}>{driver.status.toLowerCase()}</span>
+          {' '}{driver.hasAccount && <span className="stamp ok">login linked</span>}
+        </h2>
+
+        <form onSubmit={save}>
+          <div className="field"><label>Name</label>
+            <input value={edit.name} onChange={e => setEdit({ ...edit, name: e.target.value })} /></div>
+          <div className="field"><label>Phone</label>
+            <input value={edit.phone} onChange={e => setEdit({ ...edit, phone: e.target.value })} /></div>
+          <div className="field"><label>License no.</label>
+            <input value={edit.licenseNo} onChange={e => setEdit({ ...edit, licenseNo: e.target.value })} /></div>
+          <div className="field"><label>Vehicle model</label>
+            <input value={edit.vehicle} onChange={e => setEdit({ ...edit, vehicle: e.target.value })} /></div>
+          <div className="field"><label>Plate no.</label>
+            <input value={edit.plateNo} onChange={e => setEdit({ ...edit, plateNo: e.target.value })} /></div>
+          <div className="field"><label>Passenger seats</label>
+            <select value={edit.seats} onChange={e => setEdit({ ...edit, seats: Number(e.target.value) })}>
+              {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
+            </select></div>
+          {localError && <div className="notice error">{localError}</div>}
+          <button className="btn primary" type="submit">Save changes</button>
+        </form>
+
+        {!driver.hasAccount && (
+          <form onSubmit={createLogin} style={{ marginTop: 22, borderTop: '1px solid var(--line)', paddingTop: 16 }}>
+            <h2>Create login</h2>
+            <p className="muted small" style={{ marginBottom: 10 }}>
+              Lets this driver sign in to see their assigned rides.
+            </p>
+            <div className="field"><label>Email</label>
+              <input type="email" value={account.email} required
+                     onChange={e => setAccount({ ...account, email: e.target.value })} /></div>
+            <div className="field"><label>Initial password</label>
+              <input type="text" value={account.password} required minLength={6}
+                     onChange={e => setAccount({ ...account, password: e.target.value })} /></div>
+            <button className="btn primary" type="submit">Create login</button>
+          </form>
+        )}
+
+        <div className="row" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}>
+          <button className="btn" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
   )
 }

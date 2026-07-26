@@ -29,6 +29,11 @@ public class TravelGroupRepositoryImpl implements TravelGroupRepository {
     }
 
     @Override
+    public List<TravelGroup> findOpenPublicRides() {
+        return travelGroupJpaRepository.findAllByPublicRideTrueAndStatusOrderByTargetDateAsc(GroupStatus.OPEN);
+    }
+
+    @Override
     public TravelGroup save(TravelGroup travelGroup) {
         return travelGroupJpaRepository.save(travelGroup);
     }

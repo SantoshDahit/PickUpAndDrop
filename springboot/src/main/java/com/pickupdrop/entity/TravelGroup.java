@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,6 +36,12 @@ public class TravelGroup extends BaseTimeEntity {
     @Column(name = "status", nullable = false)
     private GroupStatus status;
 
+    @Column(name = "is_public", nullable = false)
+    private boolean publicRide;        // admin-published, browsable; organic groups stay private
+
+    @Column(name = "target_date")
+    private LocalDate targetDate;      // the advertised landing day (public rides only)
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "driver_id")
     private Driver driver;
@@ -43,6 +50,13 @@ public class TravelGroup extends BaseTimeEntity {
         this.id = UUID.randomUUID().toString();
         this.route = route;
         this.status = GroupStatus.OPEN;
+    }
+
+    /** Admin-published ride, anchored to an advertised landing day. */
+    public TravelGroup(Route route, LocalDate targetDate) {
+        this(route);
+        this.publicRide = true;
+        this.targetDate = targetDate;
     }
 
     public void updateStatus(GroupStatus status) {

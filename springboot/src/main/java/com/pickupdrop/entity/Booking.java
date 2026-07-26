@@ -84,6 +84,10 @@ public class Booking extends BaseFullTimeEntity {
         this.status = BookingStatus.ACTIVE;
     }
 
+    public void forceGroupPref() {
+        this.matchPref = MatchPref.GROUP;
+    }
+
     public void joinGroup(TravelGroup travelGroup) {
         this.travelGroup = travelGroup;
     }

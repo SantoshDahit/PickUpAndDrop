@@ -18,9 +18,16 @@ public class GroupMatcher {
 
     public static final int MATCH_WINDOW_DAYS = 7;
 
-    public boolean qualifies(List<Booking> activeMembers, LocalDate travelDate, int partySize) {
-        if (activeMembers.isEmpty()) {
-            return false; // never match into an empty group
+    /**
+     * @param anchorDate the advertised target date of a public ride (null for
+     *                   organic groups). It always participates in the span so
+     *                   the ride stays anchored to what was published — and it
+     *                   lets an empty public ride accept its first member.
+     */
+    public boolean qualifies(List<Booking> activeMembers, LocalDate anchorDate,
+                             LocalDate travelDate, int partySize) {
+        if (activeMembers.isEmpty() && anchorDate == null) {
+            return false; // never match into an empty organic group
         }
         int seats = activeMembers.stream().mapToInt(Booking::getPartySize).sum();
         if (seats + partySize > TravelGroup.MAX_SEATS) {
@@ -28,6 +35,10 @@ public class GroupMatcher {
         }
         LocalDate min = travelDate;
         LocalDate max = travelDate;
+        if (anchorDate != null) {
+            if (anchorDate.isBefore(min)) min = anchorDate;
+            if (anchorDate.isAfter(max)) max = anchorDate;
+        }
         for (Booking member : activeMembers) {
             LocalDate d = member.getTravelDate();
             if (d.isBefore(min)) min = d;

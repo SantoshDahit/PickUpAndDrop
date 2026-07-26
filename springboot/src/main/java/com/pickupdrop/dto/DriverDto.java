@@ -115,8 +115,13 @@ public class DriverDto {
         private String plateNo;
         private int seats;
         private DriverStatus status;
+        private boolean hasAccount;   // login linked (005)
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
+
+        public void setHasAccount(boolean hasAccount) {
+            this.hasAccount = hasAccount;
+        }
     }
 
     @Getter

@@ -25,6 +25,12 @@ public class TravelGroupController {
 
     private final TravelGroupFacade travelGroupFacade;
 
+    /** Joinable admin-published rides — no personal data. Any signed-in user. */
+    @GetMapping("/open")
+    public List<TravelGroupDto.OpenRideResponse> openRides() {
+        return travelGroupFacade.listOpenRides();
+    }
+
     /** Group view: members-only (admin may view); non-members get 404. */
     @GetMapping("/{groupId}")
     public TravelGroupDto.Response getById(@PathVariable String groupId) {

@@ -42,7 +42,15 @@ public class BookingFacade {
                 blankToNull(request.intro()), blankToNull(request.contact()), blankToNull(request.notes()));
 
         boolean joinedExisting = false;
-        if (request.matchPref() == MatchPref.GROUP) {
+        if (request.groupId() != null && !request.groupId().isBlank()) {
+            // Explicit join of an admin-published ride (public groups only).
+            TravelGroup ride = joinablePublicRide(request.groupId(), request.travelDate(), request.partySize());
+            booking.forceGroupPref();
+            booking.joinGroup(ride);
+            bookingService.save(booking);
+            refreshGroupStatus(ride);
+            joinedExisting = true;
+        } else if (request.matchPref() == MatchPref.GROUP) {
             TravelGroup group = findQualifyingGroup(route.getId(), request.travelDate(), request.partySize());
             if (group == null) {
                 group = travelGroupService.save(new TravelGroup(route));
@@ -65,11 +73,32 @@ public class BookingFacade {
     private TravelGroup findQualifyingGroup(String routeId, LocalDate travelDate, int partySize) {
         for (TravelGroup group : travelGroupService.getOpenByRouteId(routeId)) {
             List<Booking> members = bookingService.getActiveByGroupId(group.getId());
-            if (groupMatcher.qualifies(members, travelDate, partySize)) {
+            if (groupMatcher.qualifies(members, group.getTargetDate(), travelDate, partySize)) {
                 return group;
             }
         }
         return null;
+    }
+
+    /** Only admin-published OPEN rides are joinable by id — organic groups stay private. */
+    private TravelGroup joinablePublicRide(String groupId, LocalDate travelDate, int partySize) {
+        TravelGroup ride;
+        try {
+            ride = travelGroupService.getById(groupId);
+        } catch (ApiException e) {
+            throw new ApiException(ErrorCode.GROUP_NOT_JOINABLE);
+        }
+        if (!ride.isPublicRide() || ride.getStatus() != GroupStatus.OPEN) {
+            throw new ApiException(ErrorCode.GROUP_NOT_JOINABLE);
+        }
+        List<Booking> members = bookingService.getActiveByGroupId(ride.getId());
+        if (groupMatcher.seatsOf(members) + partySize > TravelGroup.MAX_SEATS) {
+            throw new ApiException(ErrorCode.GROUP_SEATS_FULL);
+        }
+        if (!groupMatcher.qualifies(members, ride.getTargetDate(), travelDate, partySize)) {
+            throw new ApiException(ErrorCode.GROUP_DATE_OUT_OF_WINDOW);
+        }
+        return ride;
     }
 
     @Transactional(readOnly = true)
@@ -109,7 +138,9 @@ public class BookingFacade {
         List<Booking> members = bookingService.getActiveByGroupId(group.getId());
         GroupStatus next;
         if (members.isEmpty()) {
-            next = GroupStatus.CLOSED;
+            // Organic groups die when empty; published rides were born empty
+            // and stay browsable until the admin closes them.
+            next = group.isPublicRide() ? GroupStatus.OPEN : GroupStatus.CLOSED;
         } else if (groupMatcher.seatsOf(members) >= TravelGroup.MAX_SEATS) {
             next = GroupStatus.FULL;
         } else {

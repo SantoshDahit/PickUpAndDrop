@@ -83,7 +83,19 @@ public enum ErrorCode {
             "DRV_BR_003"),
     DRIVER_ACCOUNT_EXISTS(HttpStatus.BAD_REQUEST,
             "This driver already has a login.",
-            "DRV_BR_004");
+            "DRV_BR_004"),
+    GROUP_NOT_JOINABLE(HttpStatus.BAD_REQUEST,
+            "This ride can't be joined.",
+            "GRP_BR_001"),
+    GROUP_DATE_OUT_OF_WINDOW(HttpStatus.BAD_REQUEST,
+            "Your landing day is too far from this ride's dates.",
+            "GRP_BR_002"),
+    GROUP_SEATS_FULL(HttpStatus.BAD_REQUEST,
+            "This ride doesn't have enough free seats.",
+            "GRP_BR_003"),
+    GROUP_HAS_MEMBERS(HttpStatus.BAD_REQUEST,
+            "This ride still has members — handle them first.",
+            "GRP_BR_004");
 
     private final HttpStatus httpStatus;
     private final String message;
