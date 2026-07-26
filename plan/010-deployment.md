@@ -1,6 +1,17 @@
 # 010 — Production deployment: getpickupdrop.com on the owner's VPS
 
-**Status:** Draft — artifacts committed; awaiting domain purchase + server details
+**Status:** Draft — **testing phase first (owner, 2026-07-26): Contabo VPS + Vercel**, domain purchase deferred
+
+## 0. Testing phase — Contabo VPS + Vercel
+
+- **Contabo VPS**: MySQL + API only (`docker compose up -d mysql api`). Public hostname without
+  buying a domain: **`api.<IP>.sslip.io`** (sslip.io resolves any embedded IP), TLS via certbot —
+  required because the admin SPA calls the API from the browser (HTTPS page → HTTPS API).
+- **Vercel** (free tier): two projects from the same repo —
+  root `/` = Next.js customer app (env `API_URL=https://api.<IP>.sslip.io`, server-side calls);
+  root `admin-web/` = Vite admin console (env `VITE_API_URL=...`, `vercel.json` SPA rewrite added).
+- API `CORS_ALLOWED_ORIGINS` = the admin Vercel URL (customer app needs none — server-side).
+- Graduation to production (§1 below, getpickupdrop.com) is a DNS + env change, no re-architecture.
 **Follows:** `springboot/conventions/18-deployment-convention.md` (Docker + Nginx; Blue-Green via GitHub Actions as Phase 2)
 
 ## 1. Target architecture

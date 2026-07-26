@@ -31,10 +31,13 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
-      CORS_ALLOWED_ORIGINS: https://admin.getpickupdrop.com
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
     ports:
       - "127.0.0.1:8080:8080"
 
+  # Testing phase: the customer app runs on Vercel — start only mysql+api
+  # (docker compose ... up -d mysql api). This service is for the later
+  # all-on-VPS production setup.
   web:
     image: pickupdrop-web:latest
     container_name: pickupdrop-web
