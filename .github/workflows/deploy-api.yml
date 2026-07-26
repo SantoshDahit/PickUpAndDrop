@@ -1,6 +1,6 @@
-# API deploy — testing phase: build+test, ship the jar over SSH, restart the
-# container. Upgrade path: convention 18 full Blue-Green with Docker Hub +
-# nginx port flip once we're past testing.
+# API deploy — Blue-Green per springboot/conventions/18-deployment-convention.md
+# Docker Hub tag: {DOCKER_HUB_USERNAME}/{PROJECT}-{APP}:{PROFILE}.{YYYY.MM.DD}
+# Containers:     {PROJECT}-{APP}-{PROFILE}-BLUE / -GREEN, nginx port flip, zero downtime.
 name: Deploy API
 
 on:
@@ -12,8 +12,22 @@ on:
       - ".github/workflows/deploy-api.yml"
   workflow_dispatch:
 
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: true
+
+env:
+  PROFILE: dev
+  PROJECT_NAME: pickupdrop
+  APPLICATION_NAME: api
+  CONTAINER_PORT: 8080
+  BLUE_PORT: 8080
+  GREEN_PORT: 8081
+  DOMAIN: api.217.15.165.238.sslip.io
+  NGINX_CONF: /etc/nginx/sites-available/api.217.15.165.238.sslip.io.conf
+
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,9 +37,24 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Build & test (Testcontainers MySQL)
+      # Convention 18 Phase 1: build (tests are covered on PR/branch runs)
+      - name: Gradle build
         working-directory: springboot
-        run: ./gradlew build
+        run: ./gradlew clean build -x test
+
+      - name: Docker Hub login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & push image
+        id: image
+        run: |
+          TAG="${{ secrets.DOCKERHUB_USERNAME }}/${PROJECT_NAME}-${APPLICATION_NAME}:${PROFILE}.$(date +%Y.%m.%d)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          docker build -t "$TAG" springboot
+          docker push "$TAG"
 
       - name: Set up SSH
         run: |
@@ -34,26 +63,88 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Ship jar + deploy files
+      # Phases 2-6 on the server: detect color → start new → health gate →
+      # nginx flip → retire old. Runtime secrets stay in /opt/pickupdrop/.env.
+      - name: Blue-Green deploy
         run: |
-          rsync -az springboot/build/libs/pickupdrop-0.0.1-SNAPSHOT.jar \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/pickupdrop/src/springboot/build/libs/"
-          rsync -az springboot/Dockerfile deploy/ \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/pickupdrop/src/deploy-inbox/"
-
-      - name: Rebuild image & restart API
-        run: |
-          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" bash -s <<'REMOTE'
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "IMAGE_TAG='${{ steps.image.outputs.tag }}' PROFILE='$PROFILE' \
+             PROJECT_NAME='$PROJECT_NAME' APPLICATION_NAME='$APPLICATION_NAME' \
+             CONTAINER_PORT='$CONTAINER_PORT' BLUE_PORT='$BLUE_PORT' GREEN_PORT='$GREEN_PORT' \
+             DOMAIN='$DOMAIN' NGINX_CONF='$NGINX_CONF' bash -s" <<'REMOTE'
           set -euo pipefail
-          SRC=/opt/pickupdrop/src
-          cp -f "$SRC/deploy-inbox/Dockerfile" "$SRC/springboot/Dockerfile" 2>/dev/null || true
-          cp -rf "$SRC/deploy-inbox/"*.yml "$SRC/deploy-inbox/nginx" "$SRC/deploy/" 2>/dev/null || true
-          sudo docker build -q -t pickupdrop-api "$SRC/springboot"
-          sudo docker compose -f "$SRC/deploy/docker-compose.prod.yml" \
-            --env-file /opt/pickupdrop/.env up -d mysql api
-          for i in $(seq 1 60); do
-            curl -sf -o /dev/null http://127.0.0.1:8080/v1/routes && exit 0
-            sleep 2
+          sudo docker pull "$IMAGE_TAG"
+
+          BLUE_CONTAINER="${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}-BLUE"
+          GREEN_CONTAINER="${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}-GREEN"
+
+          # Phase 2: detect the active colour
+          if sudo docker ps --format '{{.Names}}' | grep -q "^${BLUE_CONTAINER}$"; then
+            NEW_COLOR="GREEN"; NEW_PORT=$GREEN_PORT; NEW_CONTAINER=$GREEN_CONTAINER
+            OLD_PORT=$BLUE_PORT; OLD_CONTAINER=$BLUE_CONTAINER
+          elif sudo docker ps --format '{{.Names}}' | grep -q "^${GREEN_CONTAINER}$"; then
+            NEW_COLOR="BLUE"; NEW_PORT=$BLUE_PORT; NEW_CONTAINER=$BLUE_CONTAINER
+            OLD_PORT=$GREEN_PORT; OLD_CONTAINER=$GREEN_CONTAINER
+          else
+            NEW_COLOR="BLUE"; NEW_PORT=$BLUE_PORT; NEW_CONTAINER=$BLUE_CONTAINER
+            OLD_PORT=$GREEN_PORT; OLD_CONTAINER=$GREEN_CONTAINER
+            # legacy single container (compose 'api' service) holds BLUE_PORT — retire it
+            sudo docker stop pickupdrop-api 2>/dev/null || true
+            sudo docker rm pickupdrop-api 2>/dev/null || true
+          fi
+          echo "deploying to ${NEW_COLOR} (:${NEW_PORT})"
+
+          # Phase 3: start the new colour (old one keeps serving)
+          sudo docker stop "$NEW_CONTAINER" 2>/dev/null || true
+          sudo docker rm "$NEW_CONTAINER" 2>/dev/null || true
+          sudo docker run -d --name "$NEW_CONTAINER" \
+            --network pickupdrop-net \
+            -p 127.0.0.1:${NEW_PORT}:${CONTAINER_PORT} \
+            --env-file /opt/pickupdrop/.env \
+            -e "SPRING_PROFILES_ACTIVE=${PROFILE}" \
+            --restart always \
+            "$IMAGE_TAG"
+
+          # Phase 4: health gate (liveness), rollback on failure
+          HEALTH_URL="http://localhost:${NEW_PORT}/actuator/health/liveness"
+          MAX_RETRIES=30; RETRY_INTERVAL=10
+          for i in $(seq 1 $MAX_RETRIES); do
+            if ! sudo docker ps --format '{{.Names}}' | grep -q "^${NEW_CONTAINER}$"; then
+              echo "container died"; sudo docker logs "$NEW_CONTAINER" | tail -40 || true; exit 1
+            fi
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+            [ "$STATUS" = "200" ] && { echo "health check passed"; break; }
+            if [ "$i" = "$MAX_RETRIES" ]; then
+              echo "health check failed — rolling back"
+              sudo docker logs "$NEW_CONTAINER" | tail -40 || true
+              sudo docker stop "$NEW_CONTAINER" || true
+              sudo docker rm "$NEW_CONTAINER" || true
+              exit 1
+            fi
+            sleep $RETRY_INTERVAL
           done
-          echo "API failed to come up"; sudo docker logs pickupdrop-api | tail -40; exit 1
+
+          # Phase 5: nginx traffic flip (syntax-checked, reverted on failure)
+          sudo sed -i \
+            '/server_name '"$DOMAIN"'/,/^\}/{s/proxy_pass http:\/\/127\.0\.0\.1:[0-9]*/proxy_pass http:\/\/127.0.0.1:'"$NEW_PORT"'/}' \
+            "$NGINX_CONF"
+          if sudo nginx -t; then
+            sudo nginx -s reload
+          else
+            sudo sed -i \
+              '/server_name '"$DOMAIN"'/,/^\}/{s/proxy_pass http:\/\/127\.0\.0\.1:[0-9]*/proxy_pass http:\/\/127.0.0.1:'"$OLD_PORT"'/}' \
+              "$NGINX_CONF"
+            sudo docker stop "$NEW_CONTAINER" || true
+            sudo docker rm "$NEW_CONTAINER" || true
+            exit 1
+          fi
+
+          # Phase 6: retire the old colour + cleanup
+          sleep 10
+          sudo docker stop "$OLD_CONTAINER" 2>/dev/null || true
+          sudo docker rm "$OLD_CONTAINER" 2>/dev/null || true
+          sudo docker stop "${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}" 2>/dev/null || true
+          sudo docker rm "${PROJECT_NAME}-${APPLICATION_NAME}-${PROFILE}" 2>/dev/null || true
+          sudo docker images -f "dangling=true" -q | xargs -r sudo docker rmi -f || true
+          echo "switched to ${NEW_COLOR}"
           REMOTE

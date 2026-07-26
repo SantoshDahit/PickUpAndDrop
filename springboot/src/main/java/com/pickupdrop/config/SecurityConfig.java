@@ -31,6 +31,7 @@ public class SecurityConfig {
     public static final String[] WHITELIST = {
             "/v1/auth/**",
             "/v1/routes",
+            "/actuator/health/**",   // Blue-Green health gate (convention 18)
             "/error",
     };
 

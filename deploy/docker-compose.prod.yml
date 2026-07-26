@@ -26,7 +26,7 @@ services:
       mysql:
         condition: service_healthy
     environment:
-      DB_URL: jdbc:mysql://mysql:3306/pickupdrop?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      DB_URL: ${DB_URL}
       DB_USERNAME: pickupdrop
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
@@ -52,3 +52,8 @@ services:
 
 volumes:
   mysql-data:
+
+# Fixed network name so Blue/Green containers (docker run) can join it.
+networks:
+  default:
+    name: pickupdrop-net
