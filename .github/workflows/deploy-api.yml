@@ -89,6 +89,9 @@ jobs:
           [ -n "${{ secrets.DB_USERNAME }}" ] || missing="$missing DB_USERNAME"
           [ -n "${{ secrets.DB_PASSWORD }}" ] || missing="$missing DB_PASSWORD"
           [ -n "${{ secrets.JWT_SECRET }}" ]  || missing="$missing JWT_SECRET"
+          # dev/pro resolve spring.mail.* from these — absent means boot fails.
+          [ -n "${{ secrets.MAIL_USERNAME }}" ] || missing="$missing MAIL_USERNAME"
+          [ -n "${{ secrets.MAIL_PASSWORD }}" ] || missing="$missing MAIL_PASSWORD"
           if [ -n "$missing" ]; then
             echo "::error::missing repository secrets:$missing — the container would crash-loop on startup"
             exit 1
@@ -121,10 +124,16 @@ jobs:
           DB_USERNAME_B64=$(b64 '${{ secrets.DB_USERNAME }}')
           DB_PASSWORD_B64=$(b64 '${{ secrets.DB_PASSWORD }}')
           JWT_SECRET_B64=$(b64 '${{ secrets.JWT_SECRET }}')
+          # A Gmail app password is displayed in 4-char groups; base64 keeps any
+          # spaces intact so the receiving side can strip them deliberately.
+          MAIL_USERNAME_B64=$(b64 '${{ secrets.MAIL_USERNAME }}')
+          MAIL_PASSWORD_B64=$(b64 '${{ secrets.MAIL_PASSWORD }}')
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "IMAGE_TAG='$IMAGE_TAG' PROFILE='$PROFILE' \
              DB_URL_B64='$DB_URL_B64' DB_USERNAME_B64='$DB_USERNAME_B64' \
              DB_PASSWORD_B64='$DB_PASSWORD_B64' JWT_SECRET_B64='$JWT_SECRET_B64' \
+             MAIL_USERNAME_B64='$MAIL_USERNAME_B64' MAIL_PASSWORD_B64='$MAIL_PASSWORD_B64' \
+             WEB_BASE_URL='${{ vars.WEB_BASE_URL || 'https://pickupdrop.vercel.app' }}' \
              CORS_ALLOWED_ORIGINS='${{ vars.CORS_ALLOWED_ORIGINS || 'https://pickupdrop-admin.vercel.app' }}' \
              PROJECT_NAME='$PROJECT_NAME' APPLICATION_NAME='$APPLICATION_NAME' \
              CONTAINER_PORT='$CONTAINER_PORT' BLUE_PORT='$BLUE_PORT_HOST' GREEN_PORT='$GREEN_PORT_HOST' \
@@ -140,6 +149,13 @@ jobs:
           [ "${#DB_PASSWORD}" = "${#DB_PASSWORD_RAW}" ] \
             || echo "::warning::DB_PASSWORD had surrounding whitespace — trimmed"
           JWT_SECRET=$(trim "$(printf '%s' "$JWT_SECRET_B64" | base64 -d)")
+          MAIL_USERNAME=$(trim "$(printf '%s' "$MAIL_USERNAME_B64" | base64 -d)")
+          # Google shows app passwords as "abcd efgh ijkl mnop"; SMTP wants the
+          # 16 characters with no spaces, so strip every space, not just the ends.
+          MAIL_PASSWORD=$(printf '%s' "$MAIL_PASSWORD_B64" | base64 -d | tr -d '[:space:]')
+          echo "mail: user=[${MAIL_USERNAME}] password_length=${#MAIL_PASSWORD}"
+          [ "${#MAIL_PASSWORD}" = "16" ] \
+            || echo "::warning::MAIL_PASSWORD is ${#MAIL_PASSWORD} chars — a Gmail app password is 16"
 
           case "$DB_URL" in
             jdbc:mysql://*) ;;
@@ -223,6 +239,8 @@ jobs:
           # is stored on the server, and nothing is committed.
           EXTRA_ENV=()
           [ -n "${CORS_ALLOWED_ORIGINS:-}" ] && EXTRA_ENV+=(-e "CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}")
+          # Links inside emails need the public site root, not the API host.
+          [ -n "${WEB_BASE_URL:-}" ] && EXTRA_ENV+=(-e "WEB_BASE_URL=${WEB_BASE_URL}")
           docker rm -f "$NEW_CONTAINER" 2>/dev/null || true
           docker run -d --name "$NEW_CONTAINER" \
             --network "$DOCKER_NETWORK" \
@@ -232,6 +250,8 @@ jobs:
             -e "DB_USERNAME=${DB_USERNAME}" \
             -e "DB_PASSWORD=${DB_PASSWORD}" \
             -e "JWT_SECRET=${JWT_SECRET}" \
+            -e "MAIL_USERNAME=${MAIL_USERNAME}" \
+            -e "MAIL_PASSWORD=${MAIL_PASSWORD}" \
             "${EXTRA_ENV[@]}" \
             --restart on-failure:2 \
             "$IMAGE_TAG"

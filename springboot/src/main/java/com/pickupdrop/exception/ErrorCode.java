@@ -57,6 +57,11 @@ public enum ErrorCode {
     USER_PASSWORD_NOT_MATCH(HttpStatus.BAD_REQUEST,
             "Current password is wrong.",
             "USR_BR_002"),
+    PASSWORD_RESET_TOKEN_INVALID(HttpStatus.BAD_REQUEST,
+            // One message for unknown / expired / already-used: the response
+            // must not tell an attacker which reset links exist.
+            "That reset link is no longer valid — request a new one.",
+            "USR_BR_003"),
     BOOKING_DATE_IS_INVALID(HttpStatus.BAD_REQUEST,
             "Pick a landing day between today and a year from now.",
             "BKG_BR_001"),
@@ -93,6 +98,16 @@ public enum ErrorCode {
     GROUP_SEATS_FULL(HttpStatus.BAD_REQUEST,
             "This ride doesn't have enough free seats.",
             "GRP_BR_003"),
+    SERVICE_REQUEST_IS_NOT_FOUND(HttpStatus.NOT_FOUND,
+            // 404 for someone else's request too — never confirm it exists.
+            "Service request not found.",
+            "SVC_NF_001"),
+    SERVICE_REQUEST_STATUS_INVALID(HttpStatus.BAD_REQUEST,
+            "That request can no longer be changed.",
+            "SVC_BR_001"),
+    SERVICE_REQUEST_DATE_IS_INVALID(HttpStatus.BAD_REQUEST,
+            "Pick an arrival day between today and a year from now.",
+            "SVC_BR_002"),
     GROUP_HAS_MEMBERS(HttpStatus.BAD_REQUEST,
             "This ride still has members — handle them first.",
             "GRP_BR_004"),

@@ -27,5 +27,22 @@ spring:
       max-file-size: 5MB
       max-request-size: 6MB
 
+  # SMTP transport shape. Credentials and the on/off switch are per-profile:
+  # loc leaves mail disabled, dev/pro supply MAIL_USERNAME / MAIL_PASSWORD.
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          # Never let a hung SMTP connection tie up a mail thread.
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
 server:
   port: 8080

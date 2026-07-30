@@ -6,6 +6,18 @@ spring:
     password: landgreet
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  mail:
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+
 jwt:
   token:
     secret: pickupdrop-local-dev-secret-key-never-in-production-00
+
+app:
+  mail:
+    # Local runs log the message instead of sending it. Set MAIL_USERNAME and
+    # MAIL_PASSWORD and flip this to true to exercise real delivery.
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_USERNAME:}
+    web-base-url: http://localhost:3000

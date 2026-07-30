@@ -2,6 +2,7 @@
 
 **Status:** Implemented (2026-07-26) — all acceptance criteria verified end-to-end (headless-browser pass + `./gradlew test`)
 **Revision 2026-07-26:** re-implemented as REST API per `springboot/conventions/` (see 000): `/v1/auth/signup|login` (JWT), `/v1/users/me` GET/PATCH, `/v1/users/me/password`, DELETE `/v1/users/me` (password re-auth, soft delete, email slot freed, active bookings cancelled). Avatars deferred pending S3 (convention 21). Sections below describe the original Thymeleaf implementation and remain the behavioural spec.
+**Revision 2026-07-30:** account recovery added by [011](./011-transactional-email.md) — `POST /v1/auth/password/forgot|reset` (hashed single-use token, 60 min) with `/forgot-password` and `/reset-password` pages, plus a welcome email on signup. Signup was also **locked out of one failure mode**: a rejected attempt (typically duplicate email) used to re-render an empty form, which reads as a broken button — the typed name/email/phone now survive the error and the duplicate case links to log-in and password reset (see 007).
 **Stack:** Spring Boot + Thymeleaf (see [000](./000-stack-migration.md))
 **Depends on:** project skeleton (Gradle project, Flyway, Spring Security wiring) — created as part of this plan since it's the first feature.
 
@@ -32,7 +33,7 @@ What the old app **didn't** have, added here: profile editing, avatar, account d
 
 **In:** project skeleton (Gradle, Boot, Flyway, Security, session-jdbc, Thymeleaf layout fragment, static CSS ported from the old design tokens), `users` table V1 migration + seed, signup/login/logout, profile edit, avatar upload/serve/remove, change password, soft account deletion, admin users page.
 
-**Out:** email flows (verification, password reset), phone verification, login rate limiting/lockout (backlog — note it in the security config as a TODO with the chosen approach: bucket per email+IP), OAuth, roles beyond the `ADMIN` flag, data export. Booking/trips/routes tables come in 002 even though the old schema had them — one feature per plan.
+**Out:** ~~email flows (verification, password reset)~~ — **password reset shipped in [011](./011-transactional-email.md) (2026-07-30); address verification remains out, see 011 §3** — phone verification, login rate limiting/lockout (backlog — note it in the security config as a TODO with the chosen approach: bucket per email+IP), OAuth, roles beyond the `ADMIN` flag, data export. Booking/trips/routes tables come in 002 even though the old schema had them — one feature per plan.
 
 ## 4. Design
 

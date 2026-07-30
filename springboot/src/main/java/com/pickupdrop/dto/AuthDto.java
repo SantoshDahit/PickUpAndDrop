@@ -22,6 +22,17 @@ public class AuthDto {
     ) {
     }
 
+    public record ForgotPasswordRequest(
+            @NotBlank @Email @Size(max = 254) String email
+    ) {
+    }
+
+    public record ResetPasswordRequest(
+            @NotBlank String token,
+            @NotBlank @Size(min = 6, max = 200) String password
+    ) {
+    }
+
     @Getter
     @NoArgsConstructor
     public static class TokenResponse {

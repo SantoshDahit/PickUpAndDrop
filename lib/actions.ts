@@ -14,6 +14,10 @@ function messageOf(e: unknown, fallback: string): string {
   return e instanceof ApiError ? e.message : fallback;
 }
 
+function codeOf(e: unknown): string {
+  return e instanceof ApiError ? e.errorCode : "";
+}
+
 // ---------- Auth ----------
 
 export async function signup(formData: FormData) {
@@ -27,7 +31,17 @@ export async function signup(formData: FormData) {
   try {
     res = await api<TokenResponse>("/v1/auth/signup", { method: "POST", body: payload, auth: false });
   } catch (e) {
-    redirect("/signup?error=" + encodeURIComponent(messageOf(e, "Signup failed — please try again.")));
+    // Hand back what they typed (never the password) so a rejected attempt
+    // doesn't empty the form — an empty form reads as "the button did nothing".
+    const params = new URLSearchParams({
+      error: messageOf(e, "Signup failed — please try again."),
+      name: payload.name,
+      email: payload.email,
+    });
+    if (payload.phone) params.set("phone", payload.phone);
+    // USR_BR_001 = email already registered: offer log-in / reset instead.
+    if (codeOf(e) === "USR_BR_001") params.set("taken", "1");
+    redirect("/signup?" + params.toString());
   }
   await createSession(res!.accessToken, res!.user);
   redirect("/book");
@@ -42,10 +56,46 @@ export async function login(formData: FormData) {
   try {
     res = await api<TokenResponse>("/v1/auth/login", { method: "POST", body: payload, auth: false });
   } catch (e) {
-    redirect("/login?error=" + encodeURIComponent(messageOf(e, "Email or password didn't match.")));
+    const params = new URLSearchParams({
+      error: messageOf(e, "Email or password didn't match."),
+      email: payload.email,
+    });
+    redirect("/login?" + params.toString());
   }
   await createSession(res!.accessToken, res!.user);
   redirect("/trips");
+}
+
+export async function requestPasswordReset(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  try {
+    await api("/v1/auth/password/forgot", { method: "POST", body: { email }, auth: false });
+  } catch {
+    // Deliberately silent: revealing failures here would leak whether an
+    // address is registered. The confirmation screen is always the same.
+  }
+  redirect("/forgot-password?sent=1");
+}
+
+export async function resetPassword(formData: FormData) {
+  const token = String(formData.get("token") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm_password") ?? "");
+  if (password !== confirm) {
+    redirect(
+      `/reset-password?token=${encodeURIComponent(token)}&error=` +
+        encodeURIComponent("Those passwords don't match.")
+    );
+  }
+  try {
+    await api("/v1/auth/password/reset", { method: "POST", body: { token, password }, auth: false });
+  } catch (e) {
+    redirect(
+      `/reset-password?token=${encodeURIComponent(token)}&error=` +
+        encodeURIComponent(messageOf(e, "That reset link is no longer valid."))
+    );
+  }
+  redirect("/login?reset=1");
 }
 
 export async function logout() {
@@ -112,6 +162,41 @@ export async function cancelOwnRequest(formData: FormData) {
     // already cancelled or gone — the refreshed page reflects reality
   }
   revalidatePath("/trips");
+}
+
+// ---------- Services ----------
+
+export async function requestSimCard(formData: FormData) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const payload = {
+    type: "SIM_CARD",
+    arrivalDate: String(formData.get("arrival_date") ?? "").trim() || null,
+    airport: String(formData.get("airport") ?? "").trim() || null,
+    detail: String(formData.get("plan") ?? "").trim() || null,
+    deliverTo: String(formData.get("deliver_to") ?? "").trim() || null,
+    contact: String(formData.get("contact") ?? "").trim() || null,
+    notes: String(formData.get("notes") ?? "").trim() || null,
+  };
+
+  try {
+    await api("/v1/service-requests", { method: "POST", body: payload });
+  } catch (e) {
+    redirect("/services?error=" + encodeURIComponent(messageOf(e, "Request failed — please try again.")));
+  }
+  redirect("/services?requested=1");
+}
+
+export async function cancelServiceRequest(formData: FormData) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  try {
+    await api(`/v1/service-requests/${String(formData.get("id"))}`, { method: "DELETE" });
+  } catch (e) {
+    redirect("/services?error=" + encodeURIComponent(messageOf(e, "Could not cancel that request.")));
+  }
+  revalidatePath("/services");
 }
 
 // ---------- Group page ----------

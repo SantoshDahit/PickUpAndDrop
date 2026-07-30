@@ -30,4 +30,21 @@ public class AuthController {
     public AuthDto.TokenResponse login(@RequestBody @Valid AuthDto.LoginRequest request) {
         return authFacade.login(request);
     }
+
+    /**
+     * Emails a reset link. Always 204, whether or not the address is
+     * registered — the response must not reveal which accounts exist.
+     */
+    @PostMapping("/password/forgot")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void forgotPassword(@RequestBody @Valid AuthDto.ForgotPasswordRequest request) {
+        authFacade.forgotPassword(request);
+    }
+
+    /** Sets a new password from a reset token. */
+    @PostMapping("/password/reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@RequestBody @Valid AuthDto.ResetPasswordRequest request) {
+        authFacade.resetPassword(request);
+    }
 }

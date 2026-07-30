@@ -4,6 +4,7 @@ import com.pickupdrop.domain.WeekBucket;
 import com.pickupdrop.dto.BookingDto;
 import com.pickupdrop.dto.TravelGroupDto;
 import com.pickupdrop.entity.Booking;
+import com.pickupdrop.entity.PriceTier;
 import com.pickupdrop.entity.Route;
 import com.pickupdrop.entity.TravelGroup;
 import com.pickupdrop.entity.User;
@@ -13,6 +14,8 @@ import com.pickupdrop.enums.MatchPref;
 import com.pickupdrop.exception.ApiException;
 import com.pickupdrop.exception.ErrorCode;
 import com.pickupdrop.mapper.BookingMapper;
+import com.pickupdrop.service.mail.AfterCommitExecutor;
+import com.pickupdrop.service.mail.MailService;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,9 @@ public class BookingFacade {
     private final RouteService routeService;
     private final TravelGroupService travelGroupService;
     private final UserService userService;
+    private final PriceTierService priceTierService;
+    private final MailService mailService;
+    private final AfterCommitExecutor afterCommitExecutor;
     private final BookingMapper bookingMapper;
 
     @Transactional
@@ -56,9 +62,28 @@ public class BookingFacade {
             bookingService.save(booking);
         }
 
+        // Snapshot while the associations are attached; send once committed.
+        MailService.BookingMail mail =
+                MailService.BookingMail.of(booking, farePerPerson(route.getId(), request.partySize()));
+        afterCommitExecutor.execute(() -> mailService.sendBookingConfirmation(mail));
+
         BookingDto.Response response = bookingMapper.toResponse(booking);
         response.setJoinedExistingGroup(joinedExisting);
         return response;
+    }
+
+    /**
+     * Fare for this party size: the highest tier at or below it, matching how
+     * the public calculator reads the ladder. Null when a route has no tiers.
+     */
+    private Integer farePerPerson(String routeId, int partySize) {
+        Integer price = null;
+        for (PriceTier tier : priceTierService.getByRouteIdOrdered(routeId)) {
+            if (tier.getGroupSize() <= partySize || price == null) {
+                price = tier.getPricePerPerson();
+            }
+        }
+        return price;
     }
 
     /**

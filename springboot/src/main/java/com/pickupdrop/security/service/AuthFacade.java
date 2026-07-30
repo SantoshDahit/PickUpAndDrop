@@ -2,12 +2,15 @@ package com.pickupdrop.security.service;
 
 import com.pickupdrop.dto.AuthDto;
 import com.pickupdrop.entity.User;
+import com.pickupdrop.enums.EmailPurpose;
 import com.pickupdrop.enums.Role;
 import com.pickupdrop.exception.ApiException;
 import com.pickupdrop.exception.ErrorCode;
 import com.pickupdrop.mapper.UserMapper;
 import com.pickupdrop.security.jwt.JwtTokenProvider;
 import com.pickupdrop.service.UserService;
+import com.pickupdrop.service.mail.AfterCommitExecutor;
+import com.pickupdrop.service.mail.MailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -21,6 +24,9 @@ public class AuthFacade {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final MailService mailService;
+    private final AfterCommitExecutor afterCommitExecutor;
+    private final EmailVerificationService emailVerificationService;
 
     @Transactional
     public AuthDto.TokenResponse signup(AuthDto.SignupRequest request) {
@@ -34,6 +40,7 @@ public class AuthFacade {
                 request.name().trim(),
                 blankToNull(request.phone()),
                 Role.USER));
+        afterCommitExecutor.execute(() -> mailService.sendWelcome(user.getEmail(), user.getName()));
         return tokenResponse(user);
     }
 
@@ -50,6 +57,36 @@ public class AuthFacade {
             throw new ApiException(ErrorCode.LOGIN_FAILED);
         }
         return tokenResponse(user);
+    }
+
+    /**
+     * Emails a reset link when the address has an account.
+     *
+     * <p>Returns normally either way: telling the caller whether the address is
+     * registered would turn this into an account-enumeration endpoint.
+     */
+    @Transactional
+    public void forgotPassword(AuthDto.ForgotPasswordRequest request) {
+        // Optional, not catch: a thrown ApiException would mark this
+        // transaction rollback-only and turn the no-op case into a 500.
+        // Nullable lookup, not catch: a thrown ApiException would mark this
+        // transaction rollback-only and turn the no-op case into a 500.
+        User user = userService.getNullableActiveByEmail(normalizeEmail(request.email()));
+        if (user == null) {
+            return;
+        }
+        // Code row must be committed before the link reaches the inbox.
+        String rawCode = emailVerificationService.issue(user, EmailPurpose.PASSWORD_RESET);
+        afterCommitExecutor.execute(() -> mailService.sendPasswordReset(
+                user.getEmail(), user.getName(), rawCode));
+    }
+
+    /** Redeems a reset code and sets the new password. The code is single-use. */
+    @Transactional
+    public void resetPassword(AuthDto.ResetPasswordRequest request) {
+        User user = emailVerificationService.redeem(request.token(), EmailPurpose.PASSWORD_RESET);
+        user.updatePassword(passwordEncoder.encode(request.password()));
+        userService.save(user);
     }
 
     private AuthDto.TokenResponse tokenResponse(User user) {

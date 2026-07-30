@@ -20,9 +20,16 @@ demanding root credentials.
 
 Runtime secrets live in **GitHub Actions secrets** and are injected with
 `docker run -e` (convention 18's env-var model): `DB_URL`, `DB_USERNAME`,
-`DB_PASSWORD`, `JWT_SECRET`. Nothing sensitive is stored on the server and
-nothing is committed. `CORS_ALLOWED_ORIGINS` is a GitHub **Variable** (not
-sensitive; the admin console's Vercel URL) and is omitted until set.
+`DB_PASSWORD`, `JWT_SECRET`, and — since [011](./011-transactional-email.md)
+(2026-07-30) — `MAIL_USERNAME`, `MAIL_PASSWORD`. All six are checked before the
+deploy starts: `dev`/`pro` resolve them with no defaults, so a missing one
+crash-loops the container rather than booting degraded. The mail password is
+stripped of whitespace on the way in (Google shows app passwords in four-char
+groups; SMTP wants the 16 characters unspaced) and its length is asserted.
+Nothing sensitive is stored on the server and
+nothing is committed. `CORS_ALLOWED_ORIGINS` and `WEB_BASE_URL` (the public site
+root, used for links inside emails) are GitHub **Variables** — not sensitive —
+each with a default in the workflow.
 Network (`restaurant-network`), Caddyfile path (`/home/deploy/Caddyfile`) and
 the Blue/Green host ports (18080/18081) are pinned in the workflow env block.
 

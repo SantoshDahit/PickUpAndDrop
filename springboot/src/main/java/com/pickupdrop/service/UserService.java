@@ -27,6 +27,19 @@ public class UserService {
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_IS_NOT_FOUND));
     }
 
+    /**
+     * Lookup that tolerates a miss (convention 07 {@code getNullableByXxx}).
+     * Callers that treat "no such user" as a normal outcome must use this:
+     * letting {@code getActiveByEmail} throw inside a transaction marks it
+     * rollback-only, so even a caught exception fails the commit — which would
+     * turn password reset's deliberate no-op into a 500 and leak which emails
+     * are registered.
+     */
+    @Transactional(readOnly = true)
+    public User getNullableActiveByEmail(String email) {
+        return userRepository.findActiveByEmail(email).orElse(null);
+    }
+
     @Transactional(readOnly = true)
     public boolean existsActiveByEmail(String email) {
         return userRepository.existsActiveByEmail(email);
