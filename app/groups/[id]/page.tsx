@@ -128,14 +128,30 @@ export default async function GroupPage({
                 {messages.map((m) => (
                   <div key={m.id} className={m.mine ? "text-right" : "text-left"}>
                     <p className="text-[12.5px] text-muted mb-0.5">
-                      <span className="font-medium text-ink-soft">{m.authorFirstName}</span>{" "}
+                      <span className={`font-medium ${m.staff ? "text-accent-deep" : "text-ink-soft"}`}>
+                        {m.authorFirstName}
+                      </span>
+                      {m.staff && (
+                        <span
+                          className="ml-1.5 align-middle rounded-full px-1.5 py-0.5 text-[10.5px] font-medium uppercase tracking-wide"
+                          style={{ background: "var(--accent-tint)", color: "var(--accent-deep)" }}
+                        >
+                          Official
+                        </span>
+                      )}{" "}
                       {m.createdAt.slice(0, 16).replace("T", " ")}
                     </p>
                     <p
                       className={`inline-block rounded-[10px] px-3.5 py-2 text-[14.5px] max-w-[85%] ${
                         m.mine ? "bg-navy text-white" : ""
                       }`}
-                      style={m.mine ? undefined : { background: "var(--paper-deep)" }}
+                      style={
+                        m.mine
+                          ? undefined
+                          : m.staff
+                            ? { background: "var(--accent-tint)", boxShadow: "inset 0 0 0 1px var(--accent)" }
+                            : { background: "var(--paper-deep)" }
+                      }
                     >
                       {m.body}
                     </p>

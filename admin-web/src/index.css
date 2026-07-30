@@ -109,13 +109,17 @@ tbody tr:hover td { background: #fbfdfc; }
 
 .field { margin-bottom: 13px; }
 .field label { display: block; font-family: var(--font-heading); font-size: 12.5px; font-weight: 500; color: var(--ink); margin-bottom: 5px; }
-input, select {
+input, select, textarea {
   width: 100%; height: 42px; padding: 0 13px; border: 1px solid var(--line); border-radius: 10px;
   background: var(--paper); color: var(--ink); font-size: 14px; font-family: inherit;
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
-input:hover, select:hover { border-color: var(--line-strong); }
-input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(27, 188, 155, 0.18); }
+/* multi-line needs its own box: height comes from rows, and text starts at the top */
+textarea { height: auto; padding: 10px 13px; line-height: 1.5; resize: vertical; }
+input:hover, select:hover, textarea:hover { border-color: var(--line-strong); }
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(27, 188, 155, 0.18);
+}
 
 .notice { border-radius: 10px; padding: 11px 15px; font-size: 13.5px; margin-bottom: 14px; }
 .notice.error { background: var(--brick-tint); color: var(--brick-deep); border: 1px solid #f5d0cb; }

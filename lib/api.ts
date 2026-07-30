@@ -120,10 +120,28 @@ export interface GroupView {
   members: { firstName: string; partySize: number; travelDate: string; intro: string | null; me: boolean }[];
 }
 
+export type ServiceType = "SIM_CARD";
+export type ServiceRequestStatus = "REQUESTED" | "CONFIRMED" | "DELIVERED" | "CANCELLED";
+
+export interface ServiceRequest {
+  id: string;
+  type: ServiceType;
+  status: ServiceRequestStatus;
+  arrivalDate: string | null;
+  airport: string | null;
+  detail: string | null;
+  deliverTo: string | null;
+  contact: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
 export interface Message {
   id: string;
   authorFirstName: string;
   body: string;
   mine: boolean;
+  /** Posted by the operator — shown as the team name with an "Official" badge. */
+  staff: boolean;
   createdAt: string;
 }

@@ -36,6 +36,12 @@ public class BookingService {
         return bookingRepository.findAllByUserId(userId);
     }
 
+    /** Active bookings on a route inside a landing week — admin add candidates. */
+    @Transactional(readOnly = true)
+    public List<Booking> getActiveByRouteIdAndWeek(String routeId, LocalDate from, LocalDate to) {
+        return bookingRepository.findActiveByRouteIdAndTravelDateBetween(routeId, from, to);
+    }
+
     @Transactional(readOnly = true)
     public List<Booking> getActiveByGroupId(String groupId) {
         return bookingRepository.findActiveByGroupId(groupId);

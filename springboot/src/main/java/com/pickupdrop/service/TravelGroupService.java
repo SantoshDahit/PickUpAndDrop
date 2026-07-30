@@ -41,6 +41,12 @@ public class TravelGroupService {
         return travelGroupRepository.findOpenPublicRides();
     }
 
+    /** Every group, newest first — admin chat index only (plan 012). */
+    @Transactional(readOnly = true)
+    public List<TravelGroup> getAllForAdminIndex() {
+        return travelGroupRepository.findAllForAdminIndex();
+    }
+
     @Transactional(readOnly = true)
     public boolean existsByRouteId(String routeId) {
         return travelGroupRepository.existsByRouteId(routeId);

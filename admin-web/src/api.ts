@@ -61,6 +61,48 @@ export interface GroupView {
   id: string; route: Route; status: string; agreedDate: string | null; driver: DriverPublic | null;
   members: { firstName: string; partySize: number; travelDate: string; intro: string | null; me: boolean }[];
 }
+// ---- admin chat moderation (plan 012) ----
+
+export interface ChatSummary {
+  id: string; route: Route; status: string; official: boolean; targetDate: string | null;
+  weekStart: string | null; weekEnd: string | null;
+  memberCount: number; seatsLeft: number; messageCount: number;
+  lastMessagePreview: string | null; lastMessageAuthor: string | null;
+  lastMessageStaff: boolean; lastMessageAt: string | null; driverAssigned: boolean;
+}
+export interface AdminGroupMember {
+  bookingId: string; userId: string; name: string; email: string; phone: string | null;
+  contact: string | null; partySize: number; travelDate: string; flightNo: string | null;
+  intro: string | null; notes: string | null;
+}
+export interface AdminGroupDetail {
+  id: string; route: Route; status: string; official: boolean; targetDate: string | null;
+  weekStart: string | null; weekEnd: string | null; seatsLeft: number;
+  agreedDate: string | null; driver: DriverPublic | null; members: AdminGroupMember[];
+}
+export interface AdminMessage {
+  id: string; authorName: string; authorEmail: string; body: string;
+  staff: boolean; createdAt: string;
+}
+export interface AddCandidate {
+  bookingId: string; name: string; email: string; partySize: number;
+  travelDate: string; flightNo: string | null; currentGroupId: string | null;
+}
+
+// ---- traveller services (plan 013) ----
+
+export type ServiceType = 'SIM_CARD'
+export type ServiceRequestStatus = 'REQUESTED' | 'CONFIRMED' | 'DELIVERED' | 'CANCELLED'
+
+export interface AdminServiceRequest {
+  id: string; type: ServiceType; status: ServiceRequestStatus;
+  arrivalDate: string | null; airport: string | null; detail: string | null;
+  deliverTo: string | null; contact: string | null; notes: string | null;
+  adminNote: string | null;
+  customerName: string; customerEmail: string; customerPhone: string | null;
+  createdAt: string; updatedAt: string | null;
+}
+
 export interface Tier { groupSize: number; pricePerPerson: number }
 export interface AdminRoute {
   id: string; fromLocation: string; toLocation: string; active: boolean; tiers: Tier[];

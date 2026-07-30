@@ -51,6 +51,13 @@ public class BookingRepositoryImpl implements BookingRepository {
     }
 
     @Override
+    public List<Booking> findActiveByRouteIdAndTravelDateBetween(String routeId, LocalDate from, LocalDate to) {
+        return bookingJpaRepository
+                .findAllByRouteIdAndStatusAndTravelDateBetweenOrderByTravelDateAsc(
+                        routeId, BookingStatus.ACTIVE, from, to);
+    }
+
+    @Override
     public boolean existsByRouteId(String routeId) {
         return bookingJpaRepository.existsByRouteId(routeId);
     }

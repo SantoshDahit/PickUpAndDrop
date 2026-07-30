@@ -20,6 +20,9 @@ public interface BookingRepository {
 
     List<Booking> findActiveIndividualByDriverId(String driverId, LocalDate from);
 
+    /** Active bookings on a route whose travel date falls inside a landing week. */
+    List<Booking> findActiveByRouteIdAndTravelDateBetween(String routeId, LocalDate from, LocalDate to);
+
     Page<Booking> search(BookingDto.SearchRequest searchRequest, Pageable pageable);
 
     /** Any active ride (group or individual) with this driver dated {@code from} or later? */

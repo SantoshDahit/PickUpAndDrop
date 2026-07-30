@@ -16,6 +16,9 @@ public interface TravelGroupRepository {
 
     List<TravelGroup> findOpenPublicRides();
 
+    /** Every group for the admin chat index, newest first. */
+    List<TravelGroup> findAllForAdminIndex();
+
     boolean existsByRouteId(String routeId);
 
     TravelGroup save(TravelGroup travelGroup);

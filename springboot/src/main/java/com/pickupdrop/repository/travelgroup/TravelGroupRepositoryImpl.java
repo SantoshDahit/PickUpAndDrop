@@ -40,6 +40,11 @@ public class TravelGroupRepositoryImpl implements TravelGroupRepository {
     }
 
     @Override
+    public List<TravelGroup> findAllForAdminIndex() {
+        return travelGroupJpaRepository.findAllForAdminIndex();
+    }
+
+    @Override
     public boolean existsByRouteId(String routeId) {
         return travelGroupJpaRepository.existsByRouteId(routeId);
     }

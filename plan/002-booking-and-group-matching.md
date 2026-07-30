@@ -1,6 +1,7 @@
 # 002 — Booking with group matching and group chat
 
 **Status:** Draft
+**Revision 2026-07-30:** the operator joined the conversation — [012](./012-admin-chat-moderation.md) adds an admin chat index, a staff reply (`group_message.staff`, shown to travellers as "Pickup & Drop team"), and admin add/remove of group members. §4.5's privacy rules are unchanged for travellers; the admin views are separate response types.
 **Revision 2026-07-26:** implemented as REST API per `springboot/conventions/` (see 000): `POST /v1/bookings` (matching), `GET /v1/bookings/me`, `PATCH /v1/bookings/{id}` (travel date), `DELETE /v1/bookings/{id}` (cancel), `GET /v1/groups/{id}`, `GET|POST /v1/groups/{id}/messages`, `DELETE /v1/groups/{id}/members/me` (leave), `GET /v1/admin/bookings/search`. Matching rules (§4.1), privacy rules (§4.5) and edge cases (§5) apply unchanged; the web-page/chat-transport details (§4.4, §4.6) are superseded by the JSON API.
 **Stack:** Spring Boot + Thymeleaf (see [000](./000-stack-migration.md))
 **Depends on:** [001](./001-user-accounts.md) (accounts, sessions, avatars)
@@ -26,7 +27,7 @@ User stories:
 
 **In:** routes reference table (seeded ICN→Seoul, ICN→Daejeon), booking creation with matching, travel groups, group page with chat and preferred-date editing, leave-group, cancel booking, my-trips page, read-only admin bookings overview.
 
-**Out (deliberately):** pricing/fare tiers and the public fare calculator (003 — pricing deserves its own plan), admin driver assignment & booking status workflow (004), notifications of any kind (chat is pull-based; email/push later), realtime chat transport (see §4.6), editing route list from admin UI, pagination.
+**Out (deliberately):** pricing/fare tiers and the public fare calculator (003 — pricing deserves its own plan), admin driver assignment & booking status workflow (004), notifications of any kind (chat is pull-based; email/push later) — **superseded for one case: creating a booking now emails a receipt, [011](./011-transactional-email.md) (2026-07-30). Chat, group changes and driver assignment still notify nobody** — realtime chat transport (see §4.6), editing route list from admin UI, pagination.
 
 ## 4. Design
 
