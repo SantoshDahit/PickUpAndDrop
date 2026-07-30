@@ -1,6 +1,8 @@
 # 007 — Customer frontend: the Next.js app, ported to the API
 
 **Status:** Implemented (2026-07-26) — 11/11 two-traveller browser checks green
+**Revision 2026-07-31:** `/services` added by [013](./013-traveller-services.md) — SIM card requests and an informational services shelf; **Services** joins the signed-in nav
+**Revision 2026-07-30:** account-recovery pages and a form-failure fix, see §4
 **Depends on:** 001–006 (full API surface)
 
 ## 1. Decision (owner, 2026-07-26)
@@ -34,3 +36,32 @@ that got deleted was its private SQLite data layer.
 Home fares from API → signup → book (group default) → ticket with fare stub → second traveller
 auto-matched → chat both ways → date convergence banner → published-ride join from `/book` →
 account from API → auth guards. Zero page errors.
+
+## 4. Revision 2026-07-30 — failed forms, and account recovery
+
+Reported as "the signup button is not working". It wasn't: signup worked in production and
+locally (303 → `/book`, cookies set, account created — reconfirmed in headless Chromium). The
+defect was the **error path**. `signup` redirected to `/signup?error=…` and the page re-rendered
+the form from scratch, so a rejected attempt — nearly always a duplicate email — threw away
+everything typed. Click, fields empty, no obvious cause: indistinguishable from a dead button.
+
+What changed, in the same design language:
+
+- **Failed forms keep their input.** `signup`/`login` hand back the submitted name/email/phone
+  (never the password) as search params; the pages render them as `defaultValue`.
+- **Duplicate email offers a way out** — the notice links to "Log in instead" and "Forgot your
+  password?" instead of only stating the problem. Keyed on `errorCode` (`USR_BR_001`), not on
+  matching the message text.
+- **`SubmitButton`** (`useFormStatus`) disables and shows a spinner while an action runs, so a
+  click always acknowledges itself. Applied to signup, login and both recovery forms.
+- **The one genuinely silent case is now visible:** a password under 6 characters was blocked by
+  `minLength` with only a native tooltip, submitting nothing at all. The requirement is now
+  printed under the field.
+- **New pages** `/forgot-password` and `/reset-password` for [011](./011-transactional-email.md),
+  plus a "Forgot your password?" link on `/login` and a `?reset=1` success banner. The reset page
+  handles a missing token with an explanation and a "request a new link" button rather than a
+  form that cannot work; a mismatched confirmation is caught client-side of the API.
+
+Verified headless end-to-end: signup → forgot → emailed link → new password → login with it →
+old password rejected; duplicate-email retry keeps all three fields and shows both links; zero
+page errors.

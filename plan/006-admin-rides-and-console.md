@@ -42,6 +42,8 @@ New ErrorCodes: `GROUP_NOT_JOINABLE(GRP_BR_001)`, `GROUP_DATE_OUT_OF_WINDOW(GRP_
 Formal resource pattern on every page: **list → row click → detail panel → edit / delete / actions**.
 
 - **Rides** (new page): create form (route, target date), list of published rides (target date, members, seats left, span, driver), actions: assign driver, close.
+- **Services** (added 2026-07-31, [013](./013-traveller-services.md)): SIM card requests as a work queue — traveller identity and contact, the plan and arrival they asked for, status buttons following the `REQUESTED → CONFIRMED → DELIVERED` workflow, and an internal note travellers never see.
+- **Chats** (added 2026-07-30, [012](./012-admin-chat-moderation.md)): every group conversation, most recently active first, with member/seat counts and the last message. Opening one shows the transcript plus real member identities, a reply box that posts as the Pickup&Drop team, and add/remove member controls.
 - **Drivers**: list stays; row click opens a **detail panel** — full fields, inline edit (PATCH), status toggle, delete, and **Create login** (email + password, 005) with linked-account indicator.
 - **Bookings**: table stays (list) with the existing assign/replace/unassign actions; group rows link contextually to the ride.
 

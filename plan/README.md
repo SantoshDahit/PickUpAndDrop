@@ -16,8 +16,12 @@ Design docs for **Pickup&Drop** — airport pickups anywhere in Korea. (Named Pi
 | [007](./007-customer-web.md) | Customer frontend — the Next.js app ported to the /v1 API | Implemented |
 | [008](./008-week-bucket-groups.md) | Landing-week groups — book first, then choose your group | Implemented |
 | [009](./009-pricing.md) | Realistic pricing — cost analysis, two-zone fare tables | Implemented |
+| [010](./010-deployment.md) | Production deployment — Contabo VPS, Blue-Green, Vercel | Draft |
+| [011](./011-transactional-email.md) | Transactional email — welcome, booking receipt, password reset | Implemented |
+| [012](./012-admin-chat-moderation.md) | Admin chat — read/reply as staff, add & remove members | Implemented |
+| [013](./013-traveller-services.md) | Traveller services — SIM card requests, services shelf | Implemented |
 
-Backlog (no spec yet, add as `004+` when picked up): pricing/fare tiers + settlement (introduces the `ride` entity, see 003 §4.1), booking lifecycle/ops workflow, landing page + fare calculator, email notifications, driver ride-status workflow (picked-up/completed), avatars & driver photos (blocked on S3, convention 21), i18n (KO/EN).
+Backlog (no spec yet, add as `012+` when picked up): pricing/fare tiers + settlement (introduces the `ride` entity, see 003 §4.1), booking lifecycle/ops workflow, landing page + fare calculator, driver ride-status workflow (picked-up/completed) **plus the driver-assigned email it unblocks (011 §3)**, email verification of new addresses (011 §3), avatars & driver photos (blocked on S3, convention 21), i18n (KO/EN — including email copy).
 
 ## How to write a plan
 
