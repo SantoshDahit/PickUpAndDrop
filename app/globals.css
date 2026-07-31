@@ -178,6 +178,24 @@ select.field-input {
   box-shadow: var(--shadow-sm);
 }
 
+/* Highlighted panel — draws the eye to a secondary offer without shouting */
+.card-accent {
+  position: relative;
+  background: linear-gradient(180deg, var(--accent-tint) 0%, var(--surface) 78%);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 26px -18px rgba(20, 156, 128, 0.55);
+  overflow: hidden;
+}
+/* Accent rail on the leading edge */
+.card-accent::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--accent);
+}
+
 /* Booking / summary panel */
 .ticket {
   position: relative;
@@ -257,6 +275,8 @@ select.field-input {
 .stamp-completed::before { background: var(--green-ok); }
 .stamp-cancelled::before { background: #bdbdbd; }
 .stamp-cancelled { color: var(--muted); }
+/* `capitalize` above suits single-word statuses; a written phrase needs sentence case */
+.stamp-phrase { text-transform: none; }
 
 /* ---------- Misc ---------- */
 

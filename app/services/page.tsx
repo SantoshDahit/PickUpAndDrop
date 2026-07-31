@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { api, type ServiceRequest } from "@/lib/api";
 import { getSession } from "@/lib/session";
@@ -172,16 +173,31 @@ export default async function ServicesPage({
             Ask our team about these — they&apos;re arranged directly, not through the site.
           </p>
 
-          <div className="card p-6">
-            <p className="font-medium mb-1.5">Bank balance documentation</p>
-            <p className="text-[14.5px] text-ink-soft leading-relaxed">
-              Our team can talk you through the bank balance paperwork travellers are commonly
-              asked for, and what your bank needs from you to issue it. Get in touch and we&apos;ll
-              explain what applies to your situation.
-            </p>
-            <p className="text-[13.5px] text-muted mt-3">
-              Enquiries are handled by the team directly — nothing is arranged or requested here.
-            </p>
+          <div className="card-accent p-6 sm:p-7 pl-7 sm:pl-8">
+            <div className="flex items-start gap-4">
+              <span className="hidden sm:inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-white">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 10h18M5 10V7l7-4 7 4v3M4 10v9h16v-9M9 19v-5h6v5" />
+                </svg>
+              </span>
+              <div>
+                <p className="flex flex-wrap items-center gap-2.5 mb-1.5">
+                  <span className="font-display text-[17px]">Bank balance documentation</span>
+                  <span className="stamp stamp-confirmed stamp-phrase">Ask the team</span>
+                </p>
+                <p className="text-[14.5px] text-ink-soft leading-relaxed">
+                  Our team can talk you through the bank balance paperwork travellers are commonly
+                  asked for, and what your bank needs from you to issue it. Get in touch and
+                  we&apos;ll explain what applies to your situation.
+                </p>
+                <p className="text-[13.5px] text-muted mt-3">
+                  Enquiries are handled by the team directly — nothing is arranged or requested here.
+                </p>
+                <Link href="/contact" className="btn btn-primary btn-sm mt-5">
+                  Message the team
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
       </div>
