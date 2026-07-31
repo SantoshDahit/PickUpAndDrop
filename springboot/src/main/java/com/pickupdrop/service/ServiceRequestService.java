@@ -37,4 +37,19 @@ public class ServiceRequestService {
     public ServiceRequest save(ServiceRequest serviceRequest) {
         return serviceRequestRepository.save(serviceRequest);
     }
+
+    /**
+     * Retires a leaving traveller's open requests, the same way account
+     * deletion cancels their active bookings (plan 001 §4.1). Without this the
+     * operator keeps a work item for an account that no longer exists, with a
+     * {@code deleted:...} email nobody can contact.
+     */
+    @Transactional
+    public void cancelOpenForUser(String userId) {
+        for (ServiceRequest request : serviceRequestRepository.findAllByUserId(userId)) {
+            if (request.updateStatus(ServiceRequestStatus.CANCELLED)) {
+                serviceRequestRepository.save(request);
+            }
+        }
+    }
 }

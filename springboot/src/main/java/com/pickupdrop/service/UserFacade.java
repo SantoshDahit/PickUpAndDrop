@@ -18,6 +18,7 @@ public class UserFacade {
     private final UserService userService;
     private final BookingService bookingService;
     private final BookingFacade bookingFacade;
+    private final ServiceRequestService serviceRequestService;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -44,7 +45,8 @@ public class UserFacade {
 
     /**
      * Soft delete with password re-auth. Active bookings are cancelled and
-     * their groups refreshed; the email slot is freed for re-registration.
+     * their groups refreshed, open service requests are cancelled, and the
+     * email slot is freed for re-registration.
      */
     @Transactional
     public void deleteMe(String userId, UserDto.DeleteRequest request) {
@@ -57,6 +59,8 @@ public class UserFacade {
                 bookingFacade.cancelInternal(booking);
             }
         }
+        // Anything the traveller asked us for leaves with them (plan 013).
+        serviceRequestService.cancelOpenForUser(userId);
         user.releaseEmailOnDelete();
         user.softDelete();
     }

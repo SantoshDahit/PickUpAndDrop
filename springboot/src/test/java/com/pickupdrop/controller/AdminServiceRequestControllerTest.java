@@ -1,5 +1,6 @@
 package com.pickupdrop.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -145,6 +146,35 @@ class AdminServiceRequestControllerTest extends IntegrationTestBase {
                                 """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errorCode").value("SVC_NF_001"));
+    }
+
+    /**
+     * A traveller who deletes their account must not leave work in the queue.
+     * Their email is renamed to {@code deleted:{id}:{original}} on the way out,
+     * so an operator staring at such a row cannot act on it at all.
+     */
+    @Test
+    void deletingAnAccountClearsItsRequestsFromTheQueue() throws Exception {
+        User traveller = dataHelper.createUser();
+        String requestId = createFor(traveller);
+        String adminToken = admin();
+
+        mockMvc.perform(get("/v1/admin/service-requests").header("Authorization", adminToken))
+                .andExpect(jsonPath("$[?(@.id == '" + requestId + "')]").exists());
+
+        mockMvc.perform(delete("/v1/users/me")
+                        .header("Authorization", authHelper.bearerFor(traveller))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"password":"%s"}
+                                """.formatted(TestDataHelper.PASSWORD)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/v1/admin/service-requests").header("Authorization", adminToken))
+                .andExpect(jsonPath("$[?(@.id == '" + requestId + "')]").doesNotExist());
+        mockMvc.perform(get("/v1/admin/service-requests?status=CANCELLED")
+                        .header("Authorization", adminToken))
+                .andExpect(jsonPath("$[?(@.id == '" + requestId + "')]").doesNotExist());
     }
 
     @Test

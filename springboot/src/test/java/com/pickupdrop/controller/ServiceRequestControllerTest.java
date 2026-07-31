@@ -30,6 +30,9 @@ class ServiceRequestControllerTest extends IntegrationTestBase {
     @Autowired
     private TestAuthHelper authHelper;
 
+    @Autowired
+    private com.pickupdrop.service.ServiceRequestService serviceRequestService;
+
     private String simPayload(LocalDate arrival) {
         return """
                {"type":"SIM_CARD","arrivalDate":"%s","airport":"ICN",
@@ -162,6 +165,25 @@ class ServiceRequestControllerTest extends IntegrationTestBase {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"type\":\"SIM_CARD\",\"notes\":\"" + "x".repeat(1001) + "\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    /** Leaving cancels what you asked for, as it already cancels your bookings. */
+    @Test
+    void deletingMyAccountCancelsMyOpenRequests() throws Exception {
+        User owner = dataHelper.createUser();
+        String requestId = createFor(owner);
+
+        mockMvc.perform(delete("/v1/users/me")
+                        .header("Authorization", authHelper.bearerFor(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"password":"%s"}
+                                """.formatted(TestDataHelper.PASSWORD)))
+                .andExpect(status().isNoContent());
+
+        org.assertj.core.api.Assertions
+                .assertThat(serviceRequestService.getById(requestId).getStatus())
+                .isEqualTo(com.pickupdrop.enums.ServiceRequestStatus.CANCELLED);
     }
 
     @Test

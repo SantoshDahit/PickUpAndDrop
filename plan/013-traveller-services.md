@@ -78,6 +78,14 @@ asks again, which is one click and leaves an honest record).
 Ownership: a traveller reads and cancels **only their own** requests, enforced in the facade the
 same way bookings are (404, never 403 — do not confirm someone else's request exists).
 
+**Account deletion takes requests with it** (fixed 2026-07-31, found in production). 001 §4.1
+cancels a leaving traveller's active bookings; the first cut of this plan never joined that flow,
+so deleting an account left `REQUESTED` rows in the operator's queue showing the
+`deleted:{id}:{original}` email the soft delete renames to — work nobody could action or even
+reply to. Two changes: `deleteMe` now cancels open requests, and the queue excludes requests whose
+user is soft-deleted, which also retires rows orphaned before the first change existed. The rows
+stay in the table; they are history, not work.
+
 ### 4.3 Endpoints
 
 | Method | Path | Who | Purpose |
@@ -111,6 +119,7 @@ implies the company will arrange funds (§3).
 - [x] Free-text fields are length-bounded (notes 1000, the rest short) and trimmed.
 - [x] `arrivalDate` must be sane — not in the past, not more than a year out, like bookings.
 - [x] The bank balance card stores nothing and submits nothing.
+- [x] Deleting an account cancels its open requests and clears them from the queue (§4.2).
 
 ## 6. Migration & rollout
 
