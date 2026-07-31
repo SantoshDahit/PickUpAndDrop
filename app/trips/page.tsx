@@ -97,6 +97,10 @@ export default async function TripsPage({
                             Choose your travel group
                           </Link>
                         )}
+                        {/* Riding alone means no group chat — this is their way to reach us. */}
+                        <Link href="/contact" className="btn btn-ghost btn-sm">
+                          Contact the team
+                        </Link>
                         <form action={cancelOwnRequest}>
                           <input type="hidden" name="id" value={t.id} />
                           <button className="btn btn-ghost btn-sm">Cancel request</button>

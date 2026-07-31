@@ -20,6 +20,7 @@ Design docs for **Pickup&Drop** — airport pickups anywhere in Korea. (Named Pi
 | [011](./011-transactional-email.md) | Transactional email — welcome, booking receipt, password reset | Implemented |
 | [012](./012-admin-chat-moderation.md) | Admin chat — read/reply as staff, add & remove members | Implemented |
 | [013](./013-traveller-services.md) | Traveller services — SIM card requests, services shelf | Implemented |
+| [014](./014-support-chat.md) | Contact the team — direct traveller ↔ operator chat | Implemented |
 
 Backlog (no spec yet, add as `012+` when picked up): pricing/fare tiers + settlement (introduces the `ride` entity, see 003 §4.1), booking lifecycle/ops workflow, landing page + fare calculator, driver ride-status workflow (picked-up/completed) **plus the driver-assigned email it unblocks (011 §3)**, email verification of new addresses (011 §3), avatars & driver photos (blocked on S3, convention 21), i18n (KO/EN — including email copy).
 

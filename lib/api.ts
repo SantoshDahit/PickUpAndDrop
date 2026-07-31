@@ -120,6 +120,20 @@ export interface GroupView {
   members: { firstName: string; partySize: number; travelDate: string; intro: string | null; me: boolean }[];
 }
 
+export interface SupportMessage {
+  id: string;
+  authorName: string;
+  staff: boolean;
+  mine: boolean;
+  body: string;
+  createdAt: string;
+}
+
+export interface SupportThread {
+  messages: SupportMessage[];
+  unread: number;
+}
+
 export type ServiceType = "SIM_CARD";
 export type ServiceRequestStatus = "REQUESTED" | "CONFIRMED" | "DELIVERED" | "CANCELLED";
 

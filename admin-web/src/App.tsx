@@ -5,6 +5,7 @@ import Bookings from './pages/Bookings'
 import Rides from './pages/Rides'
 import Chats from './pages/Chats'
 import Services from './pages/Services'
+import Support from './pages/Support'
 import Drivers from './pages/Drivers'
 import RoutesPage from './pages/Routes'
 
@@ -19,6 +20,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <NavLink to="/bookings">Bookings</NavLink>
         <NavLink to="/chats">Chats</NavLink>
         <NavLink to="/services">Services</NavLink>
+        <NavLink to="/support">Support</NavLink>
         <NavLink to="/drivers">Drivers</NavLink>
         <NavLink to="/routes">Routes</NavLink>
         <div className="spacer" />
@@ -37,6 +39,7 @@ export default function App() {
       <Route path="/bookings" element={<Shell><Bookings /></Shell>} />
       <Route path="/chats" element={<Shell><Chats /></Shell>} />
       <Route path="/services" element={<Shell><Services /></Shell>} />
+      <Route path="/support" element={<Shell><Support /></Shell>} />
       <Route path="/drivers" element={<Shell><Drivers /></Shell>} />
       <Route path="/routes" element={<Shell><RoutesPage /></Shell>} />
       <Route path="*" element={<Navigate to="/bookings" replace />} />

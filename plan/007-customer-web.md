@@ -1,6 +1,7 @@
 # 007 — Customer frontend: the Next.js app, ported to the API
 
 **Status:** Implemented (2026-07-26) — 11/11 two-traveller browser checks green
+**Revision 2026-07-31 (b):** `/contact` added by [014](./014-support-chat.md) — direct chat with the team, reachable from the nav, footer, each trip card and the services card; group chat needed a group, so individual riders previously had no way to reach anyone
 **Revision 2026-07-31:** `/services` added by [013](./013-traveller-services.md) — SIM card requests and an informational services shelf; **Services** joins the signed-in nav
 **Revision 2026-07-30:** account-recovery pages and a form-failure fix, see §4
 **Depends on:** 001–006 (full API surface)

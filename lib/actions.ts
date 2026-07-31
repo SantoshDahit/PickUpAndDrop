@@ -164,6 +164,25 @@ export async function cancelOwnRequest(formData: FormData) {
   revalidatePath("/trips");
 }
 
+// ---------- Contact the team ----------
+
+export async function sendSupportMessage(formData: FormData) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) {
+    revalidatePath("/contact");
+    return;
+  }
+  try {
+    await api("/v1/support/messages", { method: "POST", body: { body } });
+  } catch (e) {
+    redirect("/contact?error=" + encodeURIComponent(messageOf(e, "Message failed — please try again.")));
+  }
+  revalidatePath("/contact");
+}
+
 // ---------- Services ----------
 
 export async function requestSimCard(formData: FormData) {

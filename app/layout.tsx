@@ -92,6 +92,7 @@ export default async function RootLayout({
                 <>
                   <Link href="/trips" className={navLink}>My trips</Link>
                   <Link href="/services" className={navLink}>Services</Link>
+                  <Link href="/contact" className={navLink}>Contact</Link>
                   <Link href="/account" className={navLink}>Account</Link>
                   <form action={logout}>
                     <button className={navLink + " cursor-pointer"}>Log out</button>
@@ -120,6 +121,7 @@ export default async function RootLayout({
                     ? [
                         { href: "/trips", label: "My trips" },
                         { href: "/services", label: "Services" },
+                        { href: "/contact", label: "Contact the team" },
                         { href: "/account", label: "Account" },
                       ]
                     : [{ href: "/login", label: "Log in" }]
@@ -172,6 +174,7 @@ export default async function RootLayout({
                   <>
                     <li><Link href="/trips" className="hover:text-accent transition-colors">My trips</Link></li>
                     <li><Link href="/services" className="hover:text-accent transition-colors">Services</Link></li>
+                    <li><Link href="/contact" className="hover:text-accent transition-colors">Contact the team</Link></li>
                     <li><Link href="/account" className="hover:text-accent transition-colors">Settings</Link></li>
                   </>
                 ) : (

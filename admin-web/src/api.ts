@@ -91,6 +91,17 @@ export interface AddCandidate {
 
 // ---- traveller services (plan 013) ----
 
+// ---- support inbox (plan 014) ----
+
+export interface SupportInboxRow {
+  userId: string; customerName: string; customerEmail: string; customerPhone: string | null;
+  messageCount: number; unread: number; lastMessageAt: string;
+}
+export interface SupportMessage {
+  id: string; authorName: string; staff: boolean; mine: boolean; body: string; createdAt: string;
+}
+export interface SupportThread { messages: SupportMessage[]; unread: number }
+
 export type ServiceType = 'SIM_CARD'
 export type ServiceRequestStatus = 'REQUESTED' | 'CONFIRMED' | 'DELIVERED' | 'CANCELLED'
 
